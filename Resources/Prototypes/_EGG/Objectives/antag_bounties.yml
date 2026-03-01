@@ -1,0 +1,55 @@
+- type: entity
+  abstract: true
+  parent: BaseObjective
+  id: BaseAntagBountyObjective
+  components:
+  - type: Objective
+    issuer: objective-issuer-nf-pirate
+    difficulty: 1
+  # - type: RoleRequirement
+    # roles:
+    # - NFPirateRole
+
+- type: entity
+  parent: BaseAntagBountyObjective
+  id: EGGAntagStealCargoObjective
+  name: Steal cargo.
+  description: Steal cargo.
+  components:
+  - type: Objective
+    icon:
+      sprite: Structures/Storage/Crates/generic.rsi
+      state: icon
+
+
+# Bounties (collections of objectives) down here
+- type: antagBounty
+  collection: Antag
+  id: AntagBountyStealCargo
+  name: Steal cargo
+  description: Steal cargo from another player
+  reward: 10000
+  objectives:
+    - EGGAntagStealCargoObjective
+    
+# - type: entity
+  # parent: [BaseNFPirateObjective, BaseFreeObjective] # TODO: make this less free?
+  # id: NFPiratePlunderObjective
+  # name: Plunder the sector.
+  # description: Amass wealth by pillaging the sector.
+  # components:
+  # - type: Objective
+    # icon:
+      # sprite: Structures/Storage/Crates/piratechest.rsi
+      # state: crate_icon
+
+# - type: entity
+  # parent: [BaseNFPirateObjective, BaseFreeObjective] # TODO: make this less free?
+  # id: NFPirateBountyObjective
+  # name: Fulfill bounties.
+  # description: Earn doubloons to spend by completing bounties.
+  # components:
+  # - type: Objective
+    # icon:
+      # sprite: _NF/Objects/Specific/Pirate/pirate_doubloon.rsi
+      # state: doubloon
