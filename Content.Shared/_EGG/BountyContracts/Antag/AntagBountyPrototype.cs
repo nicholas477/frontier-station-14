@@ -2,7 +2,7 @@ using Content.Shared._NF.BountyContracts;
 using Content.Shared.Objectives.Components;
 using Robust.Shared.Prototypes;
 
-namespace Content.Server._EGG.BountyContracts.Antag;
+namespace Content.Shared._EGG.BountyContracts.Antag;
 
 
 /// <summary>

@@ -69,8 +69,14 @@ public sealed class BountyContract
     public readonly string? Description;
     public readonly string? Author;
 
+    /// <summary>
+    /// The full type name of the UI entry class (e.g., "Content.Client._NF.BountyContracts.UI.BountyContractUiFragmentListEntry").
+    /// If null, just uses the default one
+    /// </summary>
+    public readonly string? EntryUIId;
+
     public BountyContract(uint contractId, BountyContractCategory category, string name,
-        int reward, NetEntity authorUid, string? dna, string? vessel, string? description, string? author)
+        int reward, NetEntity authorUid, string? dna, string? vessel, string? description, string? author, string? entryUIId)
     {
         ContractId = contractId;
         Category = category;
@@ -81,6 +87,8 @@ public sealed class BountyContract
         Vessel = vessel;
         Description = description;
         Author = author;
+        EntryUIId = entryUIId;
+
     }
 }
 
