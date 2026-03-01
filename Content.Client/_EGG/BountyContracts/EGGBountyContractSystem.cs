@@ -12,7 +12,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
         SubscribeLocalEvent<GetBountyContractUIEvent>(OnGetBountyContractUI);
     }
 
-    private void OnGetBountyContractUI(GetBountyContractUIEvent ev)
+    private void OnGetBountyContractUI(ref GetBountyContractUIEvent ev)
     {
         //if ev.Contract.EntryUIId == 
     }
