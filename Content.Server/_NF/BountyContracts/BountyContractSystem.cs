@@ -178,7 +178,7 @@ public sealed partial class BountyContractSystem : SharedBountyContractSystem
         // create a new contract
         var contractId = data.LastId++;
         var contract = new BountyContract(contractId, category, name, reward, GetNetEntity(authorUid),
-            dna, vessel, description, author);
+            dna, vessel, description, author, null);
 
         // try to save it
         if (!contracts.TryAdd(contractId, contract))
@@ -254,6 +254,7 @@ public sealed partial class BountyContractSystem : SharedBountyContractSystem
 
     /// <summary>
     ///     Try to get all bounty contracts available within a particular collection.
+    ///     Raises GetBountyContractsEvent to get extra contracts.
     /// </summary>
     public IEnumerable<BountyContract> GetPermittedContracts(Entity<BountyContractsCartridgeComponent> cartridge, EntityUid loader, out ProtoId<BountyContractCollectionPrototype>? newCollection)
     {

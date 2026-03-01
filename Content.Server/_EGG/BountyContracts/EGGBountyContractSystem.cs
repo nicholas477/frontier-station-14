@@ -1,20 +1,17 @@
-using Content.Server._EGG.BountyContracts.Antag;
 using Content.Server._NF.BountyContracts;
-using Content.Server._NF.Radio.Components;
+using Content.Shared._EGG.BountyContracts;
+using Content.Shared._EGG.BountyContracts.Antag;
 using Content.Shared._NF.BountyContracts;
-using Content.Shared.BarSign;
 using Content.Shared.CartridgeLoader;
 using Content.Shared.Mind;
-using JetBrains.FormatRipper.Elf;
 using Robust.Shared.Prototypes;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Content.Server._EGG.BountyContracts;
 
-public sealed partial class EGGBountyContractSystem : EntitySystem
+public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSystem
 {
     private readonly ProtoId<BountyContractCollectionPrototype> _antagCollection = "Antag";
-    //private readonly ProtoId<Entity> _objectivesCollection = "Antag";
 
     [Dependency] private readonly SharedMindSystem _mind = default!;
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
@@ -60,7 +57,7 @@ public sealed partial class EGGBountyContractSystem : EntitySystem
 
             if (prototype.Collection == ev.Collection)
             {
-                ev.Bounties.Add(new BountyContract(1000, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(uid), null, null, prototype.Description, null));
+                ev.Bounties.Add(new BountyContract(1000, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(uid), null, null, prototype.Description, null, null));
             }
         }
 
