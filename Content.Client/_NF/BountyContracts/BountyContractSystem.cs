@@ -9,7 +9,7 @@ using System.Diagnostics.Contracts;
 namespace Content.Client._NF.BountyContracts;
 
 [ByRefEvent]
-public record struct GetBountyContractUIEvent(BountyContractUiFragmentList list, BountyContract Contract, bool CanRemove, NetEntity AuthorUid, Control? Control);
+public record struct GetBountyContractUIEvent(BountyContractUiFragmentList List, BountyContract Contract, bool CanRemove, NetEntity AuthorUid, Control? Control);
 
 public sealed class BountyContractSystem : SharedBountyContractSystem
 {

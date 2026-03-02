@@ -80,6 +80,7 @@ public sealed partial class BountyContractUi : UIFragment
                 list.OnRefreshButtonPressed += OnRefreshListPressed;
                 list.OnRemoveButtonPressed += OnRemovePressed;
                 list.OnToggleNotificationPressed += OnToggleNotificationPressed;
+                list.OnCommandSent += OnCommandSent;
                 list.SetContracts(state.Contracts, state.IsAllowedRemoveBounties, state.AuthorUid);
                 list.SetCanCreate(state.IsAllowedCreateBounties);
                 list.SetNotificationsEnabled(state.NotificationsEnabled);
@@ -98,6 +99,11 @@ public sealed partial class BountyContractUi : UIFragment
 
         _fragment?.AddChild(tabs);
         _lastCollection = state.Collection;
+    }
+
+    private void OnCommandSent(CartridgeMessageEvent command)
+    {
+        SendMessage(command);
     }
 
     // UI event handlers
