@@ -19,11 +19,16 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
     {
         if (ev.Contract.EntryUIId == "antag")
         {
-            var control = new AntagBountyContractUiFragmentListEntry(ev.Contract, ev.CanRemove);
-            control.OnRemoveButtonPressed += ev.List.InvokeOnRemoveButtonPressed;
-
-            var contract = ev.Contract.ContractId;
             var list = ev.List;
+            var contract = ev.Contract.ContractId;
+
+            var control = new AntagBountyContractUiFragmentListEntry(ev.Contract, ev.CanRemove);
+            control.OnRemoveButtonPressed += _ =>
+            {
+                var command = new AntagBountyContractCommandMessageEvent(AntagBountyContractCommand.RejectBounty, contract);
+                list.SendContractCommand(command);
+            };
+
             control.OnAcceptButtonPressed += _ =>
             {
                 var command = new AntagBountyContractCommandMessageEvent(AntagBountyContractCommand.AcceptBounty, contract);

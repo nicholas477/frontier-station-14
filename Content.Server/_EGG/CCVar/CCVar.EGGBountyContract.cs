@@ -8,5 +8,5 @@ public sealed partial class CCVars
     /// Interval, in seconds, between automatic checks that give players antag bounty contracts.
     /// </summary>
     public static readonly CVarDef<float> EGGBountyNextAntagDecisionSeconds =
-        CVarDef.Create("eggbounty.next_antag_decision_seconds", 600f, CVar.SERVERONLY | CVar.ARCHIVE);
+        CVarDef.Create("eggbounty.next_antag_decision_seconds", 10f, CVar.SERVERONLY | CVar.ARCHIVE);
 }

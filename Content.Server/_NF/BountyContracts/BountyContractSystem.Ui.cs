@@ -44,7 +44,7 @@ public sealed partial class BountyContractSystem
         _cartridgeLoader.UpdateCartridgeUiState(loaderUid, state);
     }
 
-    private void CartridgeRefreshListUi(Entity<BountyContractsCartridgeComponent> cartridge, EntityUid loaderUid, ProtoId<BountyContractCollectionPrototype>? collection = null)
+    public void CartridgeRefreshListUi(Entity<BountyContractsCartridgeComponent> cartridge, EntityUid loaderUid, ProtoId<BountyContractCollectionPrototype>? collection = null)
     {
         // this will technically refresh it
         // by sending list state again
