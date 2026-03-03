@@ -1,3 +1,6 @@
+## Contract Issuer
+objective-issuer-antag-bounty = [color=#F6CE64]Rogue Bounty[/color]
+
 ## Contract collection names
 bounty-contract-collection-name-antag = Rogue
 
