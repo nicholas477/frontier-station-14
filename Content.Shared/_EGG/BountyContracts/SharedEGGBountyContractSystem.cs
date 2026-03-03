@@ -13,6 +13,7 @@ namespace Content.Shared._EGG.BountyContracts;
 public enum AntagBountyContractCommand : byte
 {
     AcceptBounty = 0,
+    RejectBounty = 1
 }
 
 [NetSerializable, Serializable]

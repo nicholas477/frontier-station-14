@@ -4,9 +4,11 @@ using Content.Shared._EGG.BountyContracts.Antag;
 using Content.Shared._NF.BountyContracts;
 using Content.Shared.CartridgeLoader;
 using Content.Shared.Mind;
+using JetBrains.FormatRipper.Elf;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 
 namespace Content.Server._EGG.BountyContracts;
 
@@ -18,6 +20,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
     [Dependency] private readonly SharedMindSystem _mind = default!;
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
     [Dependency] private readonly IGameTiming _timing = default!;
+    [Dependency] private readonly BountyContractSystem _bounty = default!;
 
     private TimeSpan _lastAntagDecisionTime = TimeSpan.Zero;
 
@@ -39,12 +42,15 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
         if (curTime > (_lastAntagDecisionTime + NextAntagDecisionTimerLength))
         {
             DecideAntagBounties();
-            _lastAntagDecisionTime += NextAntagDecisionTimerLength;
+            _lastAntagDecisionTime = curTime;
         }
     }
 
     private void DecideAntagBounties()
     {
+        // Leave it to other systems to do
+        RaiseLocalEvent(new DecideAntagBountiesEvent());
+
         var query = EntityQueryEnumerator<AntagBountyContractsCartridgeComponent>();
         while (query.MoveNext(out var uid, out var comp))
         {
@@ -57,9 +63,18 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
             foreach (var prototype in _protoMan.EnumeratePrototypes<AntagBountyPrototype>())
             {
                 var nextContractId = comp.GetNextContractId();
-                var newBounty = new BountyContract(nextContractId, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(uid), null, null, prototype.Description, null, "antag");
+                var newBounty = new AntagBountyContract(prototype,
+                    new BountyContract(nextContractId, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(uid), null, null, prototype.Description, null, "antag"));
                 comp.Contracts.Add(nextContractId, newBounty);
             }
+
+            TryComp<BountyContractsCartridgeComponent>(uid, out var bountyComp);
+            if (bountyComp is null)
+            {
+                continue;
+            }
+
+            RefreshBountyUI(new Entity<AntagBountyContractsCartridgeComponent>(uid, comp));
         }
     }
 
@@ -68,7 +83,35 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
         Log.Debug("Hello!");
         if (args is AntagBountyContractCommandMessageEvent command)
         {
-            //command.
+            var contract = ent.Comp.GetContract(command.ContractId);
+            if (contract is null)
+            {
+                return;
+            }
+
+            if (!GetMindFromCartridge(ent.Owner, out var mindId, out var mindComp))
+            {
+                return;
+            }
+
+            switch (command.Command)
+            {
+                case AntagBountyContractCommand.AcceptBounty:
+                    {
+                        foreach (var item in contract.Prototype.Objectives)
+                        {
+                            _mind.TryAddObjective(mindId, mindComp, item);
+                        }
+
+                        contract.State = AntagBountyContract.BountyState.Accepted;
+                    }
+                    break;
+                case AntagBountyContractCommand.RejectBounty:
+                    contract.State = AntagBountyContract.BountyState.Rejected;
+                    break;
+            }
+
+            RefreshBountyUI(ent);
         }
     }
 
@@ -99,8 +142,30 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
         foreach (var bounty in component.Contracts)
         {
-            //ev.Bounties.Add(new BountyContract(1000, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(uid), null, null, prototype.Description, null, "antag"));
-            ev.Bounties.Add(bounty.Value);
+            // Dont show the bounty if its been accepted/rejected
+            if (bounty.Value.State != AntagBountyContract.BountyState.Offered)
+            {
+                continue;
+            }
+
+            ev.Bounties.Add(bounty.Value.Bounty);
         }
+    }
+
+    private void RefreshBountyUI(Entity<AntagBountyContractsCartridgeComponent> ent)
+    {
+        TryComp<BountyContractsCartridgeComponent>(ent, out var bountyComp);
+        if (bountyComp is null)
+        {
+            return;
+        }
+
+        TryComp<CartridgeComponent>(ent, out CartridgeComponent? cartridgeComp);
+        if (cartridgeComp is null || cartridgeComp.LoaderUid is null)
+        {
+            return;
+        }
+
+        _bounty.CartridgeRefreshListUi(new Entity<BountyContractsCartridgeComponent>(ent.Owner, bountyComp), cartridgeComp.LoaderUid.Value);
     }
 }
