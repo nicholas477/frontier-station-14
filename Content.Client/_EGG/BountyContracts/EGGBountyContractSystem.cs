@@ -2,6 +2,7 @@ using Content.Client._EGG.BountyContracts.UI;
 using Content.Client._NF.BountyContracts;
 using Content.Client.UserInterface.ControlExtensions;
 using Content.Shared._EGG.BountyContracts;
+using Content.Shared.Objectives.Components;
 using System.Xml.Linq;
 
 namespace Content.Client._EGG.BountyContracts;

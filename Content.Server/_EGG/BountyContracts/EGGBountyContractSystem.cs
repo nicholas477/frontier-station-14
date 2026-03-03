@@ -4,7 +4,7 @@ using Content.Shared._EGG.BountyContracts.Antag;
 using Content.Shared._NF.BountyContracts;
 using Content.Shared.CartridgeLoader;
 using Content.Shared.Mind;
-using JetBrains.FormatRipper.Elf;
+using Content.Shared.Roles;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using System.Diagnostics.CodeAnalysis;
@@ -18,6 +18,8 @@ namespace Content.Server._EGG.BountyContracts;
 public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSystem
 {
     [Dependency] private readonly SharedMindSystem _mind = default!;
+    [Dependency] private readonly SharedRoleSystem _roleSystem = default!;
+
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
     [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly BountyContractSystem _bounty = default!;
@@ -86,6 +88,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
             var contract = ent.Comp.GetContract(command.ContractId);
             if (contract is null)
             {
+                Log.Error($"Failed to find contract with id {command.ContractId} for command {command.Command}");
                 return;
             }
 
@@ -100,7 +103,12 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
                     {
                         foreach (var item in contract.Prototype.Objectives)
                         {
-                            _mind.TryAddObjective(mindId, mindComp, item);
+                            if (!_mind.TryAddObjective(mindId, mindComp, item))
+                            {
+                                Log.Error($"Failed to create objective: {item}");
+                            }
+
+                            //_roleSystem.MindAddRole(mindId, "MindRoleBountyThief");
                         }
 
                         contract.State = AntagBountyContract.BountyState.Accepted;
