@@ -5,7 +5,7 @@ namespace Content.Server._EGG.BountyContracts;
 /// <summary>
 /// Currently handles antag bounties
 /// </summary>
-public sealed partial class AntagBountySelectionSystem : EntitySystem
+public sealed partial class EGGBountySelectionSystem : EntitySystem
 {
 
 }

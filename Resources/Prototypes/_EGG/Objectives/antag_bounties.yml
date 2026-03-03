@@ -20,6 +20,7 @@
     icon:
       sprite: Structures/Storage/Crates/generic.rsi
       state: icon
+  - type: StealCargoObjective
 
 
 # Bounties (collections of objectives) down here
