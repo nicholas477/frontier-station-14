@@ -19,8 +19,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
     [Dependency] private readonly IGameTiming _timing = default!;
 
-    private readonly TimeSpan _nextAntagDecisionTimerLength = TimeSpan.FromSeconds(10);
-    private TimeSpan _nextAntagDecisionTime = TimeSpan.Zero;
+    private TimeSpan _lastAntagDecisionTime = TimeSpan.Zero;
 
     public override void Initialize()
     {
@@ -28,6 +27,8 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
         SubscribeLocalEvent<AntagBountyContractsCartridgeComponent, GetBountyContractsEvent>(OnGetBountyContracts);
         SubscribeLocalEvent<AntagBountyContractsCartridgeComponent, CartridgeMessageEvent>(OnUiMessage);
+
+        InitializeCVars();
     }
 
     public override void Update(float frameTime)
@@ -35,10 +36,10 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
         base.Update(frameTime);
 
         var curTime = _timing.CurTime;
-        if (curTime > _nextAntagDecisionTime)
+        if (curTime > (_lastAntagDecisionTime + NextAntagDecisionTimerLength))
         {
             DecideAntagBounties();
-            _nextAntagDecisionTime += _nextAntagDecisionTimerLength;
+            _lastAntagDecisionTime += NextAntagDecisionTimerLength;
         }
     }
 
