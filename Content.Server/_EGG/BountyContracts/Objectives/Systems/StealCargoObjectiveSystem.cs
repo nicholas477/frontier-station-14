@@ -65,8 +65,8 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         //    ? Loc.GetString(condition.Comp.DescriptionMultiplyText, ("itemName", localizedName), ("count", condition.Comp.CollectionSize))
         //    : Loc.GetString(condition.Comp.DescriptionText, ("itemName", localizedName));
 
-        //_metaData.SetEntityName(condition.Owner, title, args.Meta);
-        _metaData.SetEntityDescription(condition.Owner, "test", args.Meta);
+        _metaData.SetEntityName(condition.Owner, "Steal Cargo", args.Meta);
+        _metaData.SetEntityDescription(condition.Owner, "Steal some cargo idiot", args.Meta);
         //_objectives.SetIcon(condition.Owner, group.Sprite, args.Objective);
     }
 

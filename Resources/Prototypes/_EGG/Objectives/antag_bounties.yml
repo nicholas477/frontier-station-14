@@ -4,7 +4,7 @@
   id: BaseAntagBountyObjective
   components:
   - type: Objective
-    issuer: objective-issuer-nf-pirate
+    issuer: objective-issuer-antag-bounty
     difficulty: 1
   # - type: RoleRequirement
     # roles:
