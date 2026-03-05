@@ -82,7 +82,6 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
     private void OnUiMessage(Entity<AntagBountyContractsCartridgeComponent> ent, ref CartridgeMessageEvent args)
     {
-        Log.Debug("Hello!");
         if (args is AntagBountyContractCommandMessageEvent command)
         {
             var contract = ent.Comp.GetContract(command.ContractId);
@@ -91,6 +90,8 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
                 Log.Error($"Failed to find contract with id {command.ContractId} for command {command.Command}");
                 return;
             }
+
+
 
             if (!GetMindFromCartridge(ent.Owner, out var mindId, out var mindComp))
             {
@@ -101,6 +102,12 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
             {
                 case AntagBountyContractCommand.AcceptBounty:
                     {
+                        if (contract.State != AntagBountyContract.BountyState.Offered)
+                        {
+                            Log.Error($"Contract {contract.Bounty} is not in an offered state, cannot accept.");
+                            return;
+                        }
+
                         foreach (var item in contract.Prototype.Objectives)
                         {
                             if (!_mind.TryAddObjective(mindId, mindComp, item))
@@ -115,6 +122,12 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
                     }
                     break;
                 case AntagBountyContractCommand.RejectBounty:
+                    if (contract.State != AntagBountyContract.BountyState.Offered)
+                    {
+                        Log.Error($"Contract {contract.Bounty} is not in an offered state, cannot reject.");
+                        return;
+                    }
+
                     contract.State = AntagBountyContract.BountyState.Rejected;
                     break;
             }
