@@ -19,7 +19,6 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 {
     [Dependency] private readonly SharedMindSystem _mind = default!;
     [Dependency] private readonly SharedRoleSystem _roleSystem = default!;
-
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
     [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly BountyContractSystem _bounty = default!;
