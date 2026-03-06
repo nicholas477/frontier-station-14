@@ -25,6 +25,7 @@
       programName: bounty-contracts-program-name
       icon: Interface/Actions/shop.png
     - type: BountyContractsCartridge
+    - type: AntagBountyContractsCartridge
 
 - type: entity
   parent: NFBasePDACartridge
