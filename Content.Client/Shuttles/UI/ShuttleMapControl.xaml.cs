@@ -83,6 +83,8 @@ public sealed partial class ShuttleMapControl : BaseShuttleControl
         _physicsQuery = EntManager.GetEntityQuery<PhysicsComponent>();
 
         _font = new VectorFont(cache.GetResource<FontResource>("/EngineFonts/NotoSans/NotoSans-Regular.ttf"), 10);
+
+        RescaleMap = false;
     }
 
     public void SetMap(MapId mapId, Vector2 offset, bool recentering = false)
@@ -472,7 +474,7 @@ public sealed partial class ShuttleMapControl : BaseShuttleControl
         }
 
         // Draw the coordinates
-        var mapOffset = MidPointVector;
+        var mapOffset = new Vector2(MidPoint.X, MidPoint.Y);
 
         if (mousePos.Window != WindowId.Invalid &&
             controlLocalBounds.Contains(mouseLocalPos.Floored()))
