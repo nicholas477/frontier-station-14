@@ -1,31 +1,39 @@
 using Content.Server._EGG.BountyContracts.Objectives.Components;
-using Content.Server.Access.Systems;
-using Content.Server.Objectives.Components;
-using Content.Shared._NF.Shipyard.Components;
-using Content.Shared.Objectives.Components;
-using Content.Shared.Objectives.Systems;
-using Robust.Server.Player;
-using Robust.Shared.Player;
 using Content.Server._NF.BountyContracts;
+using Content.Server.Access.Systems;
 using Content.Server.Cargo.Components;
 using Content.Server.Cargo.Systems;
+using Content.Server.Objectives.Components;
 using Content.Shared._EGG.BountyContracts;
 using Content.Shared._EGG.BountyContracts.Antag;
+using Content.Shared._NF.BountyContracts;
+using Content.Shared._NF.Shipyard.Components;
 using Content.Shared.Access.Systems;
 using Content.Shared.Cargo.Components;
 using Content.Shared.CartridgeLoader;
 using Content.Shared.Movement.Components;
+using Content.Shared.Objectives.Components;
+using Content.Shared.Objectives.Systems;
+using Robust.Server.Player;
 using Robust.Shared.Map.Components;
+using Robust.Shared.Player;
+using Robust.Shared.Prototypes;
+using Robust.Shared.Random;
+using Robust.Shared.Toolshed.TypeParsers;
+using System.Linq;
 
 namespace Content.Server._EGG.BountyContracts.Objectives.Systems;
 
 public sealed partial class StealCargoObjectiveSystem : EntitySystem
 {
+    [Dependency] private readonly EGGBountyContractSystem _eggBountyContractSystem = default!;
     [Dependency] private readonly SharedIdCardSystem _idCardSystem = default!;
     [Dependency] private readonly EntityLookupSystem _lookup = default!;
     [Dependency] private readonly PricingSystem _pricing = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly IPlayerManager _playerManager = default!;
+    [Dependency] private readonly IRobustRandom _random = default!;
+    [Dependency] private readonly IPrototypeManager _protoMan = default!;
 
     [Dependency] private readonly SharedObjectivesSystem _objectives = default!;
     [Dependency] private readonly MetaDataSystem _metaData = default!;
@@ -60,7 +68,31 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
             return;
         }
 
+        var validSessions = _playerManager.Sessions
+            .Where(session => session.AttachedEntity is { Valid: true } && session != playerSession)
+            .ToList();
 
+        if (validSessions.Count == 0)
+        {
+            Log.Debug("No valid players found to give \"steal cargo\" objective");
+            return;
+        }
+
+        var randomSession = _random.Pick(validSessions);
+
+        if (!_eggBountyContractSystem.TryGetAntagCartridgeFromSession(randomSession, out EntityUid? cartridgeUid, out AntagBountyContractsCartridgeComponent? comp))
+        {
+            return;
+        }
+
+
+        // AntagBountyStealCargo
+        var prototype = _protoMan.Index<AntagBountyPrototype>("AntagBountyStealCargo");
+        var nextContractId = comp.GetNextContractId();
+        var newBounty = new AntagBountyContract(prototype,
+            new BountyContract(nextContractId, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(cartridgeUid.Value), null, null, prototype.Description, null, "antag"));
+        comp.Contracts.Add(nextContractId, newBounty);
+        _eggBountyContractSystem.SendBountyNotification(cartridgeUid.Value, null, "New antag bounty!");
     }
 
     /// <summary>

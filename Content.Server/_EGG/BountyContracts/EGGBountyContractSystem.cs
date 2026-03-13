@@ -8,6 +8,7 @@ using Content.Shared.CartridgeLoader;
 using Content.Shared.Mind;
 using Content.Shared.Roles;
 using Robust.Shared.Physics.Dynamics.Contacts;
+using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using System.Diagnostics.CodeAnalysis;
@@ -163,7 +164,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
         }
     }
 
-    private bool GetMindFromCartridge(EntityUid uid, out EntityUid mindId, [NotNullWhen(true)] out MindComponent? mind)
+    public bool GetMindFromCartridge(EntityUid uid, out EntityUid mindId, [NotNullWhen(true)] out MindComponent? mind)
     {
         TryComp<CartridgeComponent>(uid, out CartridgeComponent? comp);
 
@@ -179,6 +180,45 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
         }
 
         return _mind.TryGetMind(pdaEnt.Value, out mindId, out mind);
+    }
+
+    /// <summary>
+    /// Tries to get an AntagBountyContractsCartridgeComponent from a player's session.
+    /// </summary>
+    /// <param name="session">The player session to check</param>
+    /// <param name="cartridgeUid">The entity UID of the cartridge, if found</param>
+    /// <param name="component">The AntagBountyContractsCartridgeComponent, if found</param>
+    /// <returns>True if the player has a PDA with the antag bounty cartridge installed</returns>
+    public bool TryGetAntagCartridgeFromSession(ICommonSession session, [NotNullWhen(true)] out EntityUid? cartridgeUid, [NotNullWhen(true)] out AntagBountyContractsCartridgeComponent? component)
+    {
+        cartridgeUid = null;
+        component = null;
+
+        // Get the player's attached entity
+        if (session.AttachedEntity is not { Valid: true } playerUid)
+        {
+            return false;
+        }
+
+        // Try to find a PDA/cartridge loader on the player
+        // Check inventory slots for a device with CartridgeLoaderComponent
+        var query = EntityQueryEnumerator<CartridgeLoaderComponent, TransformComponent>();
+        while (query.MoveNext(out var loaderUid, out var loader, out var xform))
+        {
+            // Check if this loader is being held by or is a child of the player
+            if (xform.ParentUid != playerUid)
+            {
+                continue;
+            }
+
+            // Try to get the antag bounty cartridge from this loader
+            if (_cartridgeLoader.TryGetProgram<AntagBountyContractsCartridgeComponent>(loaderUid, out cartridgeUid, out component, false, loader))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void OnGetBountyContracts(EntityUid uid, AntagBountyContractsCartridgeComponent component, GetBountyContractsEvent ev)
