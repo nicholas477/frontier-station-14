@@ -1,10 +1,13 @@
 using Content.Server._NF.BountyContracts;
+using Content.Server.CartridgeLoader;
 using Content.Shared._EGG.BountyContracts;
 using Content.Shared._EGG.BountyContracts.Antag;
+using Content.Shared._NF.Bank;
 using Content.Shared._NF.BountyContracts;
 using Content.Shared.CartridgeLoader;
 using Content.Shared.Mind;
 using Content.Shared.Roles;
+using Robust.Shared.Physics.Dynamics.Contacts;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using System.Diagnostics.CodeAnalysis;
@@ -21,6 +24,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
     [Dependency] private readonly SharedRoleSystem _roleSystem = default!;
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
     [Dependency] private readonly IGameTiming _timing = default!;
+    [Dependency] private readonly CartridgeLoaderSystem _cartridgeLoader = default!;
     [Dependency] private readonly BountyContractSystem _bounty = default!;
 
     private TimeSpan _lastAntagDecisionTime = TimeSpan.Zero;
@@ -49,33 +53,57 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
     private void DecideAntagBounties()
     {
-        // Leave it to other systems to do
+        // Let other systems place bounties too
         RaiseLocalEvent(new DecideAntagBountiesEvent());
 
-        var query = EntityQueryEnumerator<AntagBountyContractsCartridgeComponent>();
-        while (query.MoveNext(out var uid, out var comp))
+        //var query = EntityQueryEnumerator<AntagBountyContractsCartridgeComponent>();
+        //while (query.MoveNext(out var uid, out var comp))
+        //{
+        //    //If whatever is holding the cartridge doesn't have a mind then they wont get new antag bounties
+        //    if (!GetMindFromCartridge(uid, out var mindId, out var mind))
+        //    {
+        //        continue;
+        //    }
+
+        //    foreach (var prototype in _protoMan.EnumeratePrototypes<AntagBountyPrototype>())
+        //    {
+        //        var nextContractId = comp.GetNextContractId();
+        //        var newBounty = new AntagBountyContract(prototype,
+        //            new BountyContract(nextContractId, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(uid), null, null, prototype.Description, null, "antag"));
+        //        comp.Contracts.Add(nextContractId, newBounty);
+        //        SendBountyNotification(uid, null, "New antag bounty!");
+        //    }
+
+        //    TryComp<BountyContractsCartridgeComponent>(uid, out var bountyComp);
+        //    if (bountyComp is null)
+        //    {
+        //        continue;
+        //    }
+
+        //    RefreshBountyUI(new Entity<AntagBountyContractsCartridgeComponent>(uid, comp));
+        //}
+    }
+
+    public void SendBountyNotification(EntityUid cartridgeUid, string? sender, string msg)
+    {
+        sender ??= Loc.GetString("bounty-contracts-announcement-pda-name");
+
+        TryComp<CartridgeComponent>(cartridgeUid, out CartridgeComponent? cartComp);
+        if (cartComp is null || cartComp.LoaderUid is null)
         {
-            //If whatever is holding the cartridge doesn't have a mind then they wont get new antag bounties
-            if (!GetMindFromCartridge(uid, out var mindId, out var mind))
-            {
-                continue;
-            }
+            return;
+        }
 
-            foreach (var prototype in _protoMan.EnumeratePrototypes<AntagBountyPrototype>())
-            {
-                var nextContractId = comp.GetNextContractId();
-                var newBounty = new AntagBountyContract(prototype,
-                    new BountyContract(nextContractId, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(uid), null, null, prototype.Description, null, "antag"));
-                comp.Contracts.Add(nextContractId, newBounty);
-            }
+        TryComp<CartridgeLoaderComponent>(cartComp.LoaderUid, out CartridgeLoaderComponent? cartLoaderComp);
+        if (cartLoaderComp is null)
+        {
+            return;
+        }
 
-            TryComp<BountyContractsCartridgeComponent>(uid, out var bountyComp);
-            if (bountyComp is null)
-            {
-                continue;
-            }
-
-            RefreshBountyUI(new Entity<AntagBountyContractsCartridgeComponent>(uid, comp));
+        if (_cartridgeLoader.TryGetProgram<BountyContractsCartridgeComponent>(cartComp.LoaderUid.Value, out _, out var bountyCartComp, true, cartLoaderComp)
+            && bountyCartComp.NotificationsEnabled)
+        {
+            _cartridgeLoader.SendNotification(cartComp.LoaderUid.Value, sender, msg, cartLoaderComp);
         }
     }
 
