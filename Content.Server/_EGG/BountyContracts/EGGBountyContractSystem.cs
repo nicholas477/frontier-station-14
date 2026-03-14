@@ -119,6 +119,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
                         var ev = new OnAntagBountyAcceptedEvent(
                             contract,
+                            (mindId, mindComp),
                             ent
                         );
 
@@ -137,6 +138,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
                         var ev = new OnAntagBountyRejectedEvent(
                             contract,
+                            (mindId, mindComp),
                             ent
                         );
 
@@ -157,7 +159,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
         var loaderEnt = comp?.LoaderUid;
 
-        // The entity holding this pda. 
+        // The entity holding this pda.
         EntityUid? pdaEnt = loaderEnt.HasValue ? Transform(loaderEnt.Value).ParentUid : null;
         if (pdaEnt is null)
         {

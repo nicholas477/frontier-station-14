@@ -20,16 +20,20 @@ using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Robust.Shared.Toolshed.TypeParsers;
+using Content.Shared.Mind;
 using System.Linq;
 
 namespace Content.Server._EGG.BountyContracts.Objectives.Systems;
 
 public sealed partial class AntagBountyContractStealCargo : AntagBountyContract
 {
-    public AntagBountyContractStealCargo(BountyContract bounty)
+    public AntagBountyContractStealCargo(ICommonSession? inPlayerToStealFrom, BountyContract bounty)
         : base(bounty)
     {
+        PlayerToStealFrom = inPlayerToStealFrom;
     }
+
+    public readonly ICommonSession? PlayerToStealFrom;
 }
 
 public sealed partial class StealCargoObjectiveSystem : EntitySystem
@@ -43,6 +47,7 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
 
     [Dependency] private readonly SharedObjectivesSystem _objectives = default!;
+    [Dependency] private readonly SharedMindSystem _mind = default!;
     [Dependency] private readonly MetaDataSystem _metaData = default!;
 
     public override void Initialize()
@@ -70,21 +75,21 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
             //return;
         }
 
-        var (playerSession, cargoValue) = playerWithMostCargo.HasValue ? playerWithMostCargo.Value : (null, 0.0);
-        if (playerSession is not null)
+        var (playerToStealFrom, cargoValue) = playerWithMostCargo.HasValue ? playerWithMostCargo.Value : (null, 0.0);
+        if (playerToStealFrom is not null)
         {
-            Log.Debug($"Player {playerSession.Name} has the highest cargo value: {cargoValue}");
+            Log.Debug($"Player {playerToStealFrom.Name} has the highest cargo value: {cargoValue}");
         }
 
-        playerSession ??= _random.Pick(_playerManager.Sessions);
+        playerToStealFrom ??= _random.Pick(_playerManager.Sessions);
 
-        if (playerSession is null)
+        if (playerToStealFrom is null)
         {
             return;
         }
 
         var validSessions = _playerManager.Sessions
-            .Where(session => session.AttachedEntity is { Valid: true } && session != playerSession)
+            .Where(session => session.AttachedEntity is { Valid: true } && session != playerToStealFrom)
             .ToList();
 
         if (validSessions.Count == 0)
@@ -112,7 +117,7 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
         var nextContractId = comp.GetNextContractId();
         var bounty = AntagBountyContract.MakeBountyFromPrototype(nextContractId, GetNetEntity(cartridgeUid.Value), prototype);
-        var newBounty = new AntagBountyContractStealCargo(bounty);
+        var newBounty = new AntagBountyContractStealCargo(playerToStealFrom, bounty);
 
         comp.Contracts.Add(nextContractId, newBounty);
         _eggBountyContractSystem.SendBountyNotification(cartridgeUid.Value, null, "New antag bounty!");
@@ -125,6 +130,14 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         {
             return;
         }
+
+        if (contract.PlayerToStealFrom is null)
+        {
+            Log.Error("Contract has null player to steal from, cannot accept.");
+            return;
+        }
+
+        _mind.TryAddObjective(ev.Mind.Owner, ev.Mind.Comp, "");
 
         Log.Debug("Butthole sniffers!");
     }
