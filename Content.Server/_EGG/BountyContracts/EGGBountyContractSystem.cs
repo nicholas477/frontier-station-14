@@ -55,34 +55,14 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
     private void DecideAntagBounties()
     {
         // Let other systems place bounties too
-        RaiseLocalEvent(new DecideAntagBountiesEvent());
+        var ev = new DecideAntagBountiesEvent();
+        RaiseLocalEvent(ref ev);
 
-        //var query = EntityQueryEnumerator<AntagBountyContractsCartridgeComponent>();
-        //while (query.MoveNext(out var uid, out var comp))
-        //{
-        //    //If whatever is holding the cartridge doesn't have a mind then they wont get new antag bounties
-        //    if (!GetMindFromCartridge(uid, out var mindId, out var mind))
-        //    {
-        //        continue;
-        //    }
-
-        //    foreach (var prototype in _protoMan.EnumeratePrototypes<AntagBountyPrototype>())
-        //    {
-        //        var nextContractId = comp.GetNextContractId();
-        //        var newBounty = new AntagBountyContract(prototype,
-        //            new BountyContract(nextContractId, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(uid), null, null, prototype.Description, null, "antag"));
-        //        comp.Contracts.Add(nextContractId, newBounty);
-        //        SendBountyNotification(uid, null, "New antag bounty!");
-        //    }
-
-        //    TryComp<BountyContractsCartridgeComponent>(uid, out var bountyComp);
-        //    if (bountyComp is null)
-        //    {
-        //        continue;
-        //    }
-
-        //    RefreshBountyUI(new Entity<AntagBountyContractsCartridgeComponent>(uid, comp));
-        //}
+        var query = EntityQueryEnumerator<AntagBountyContractsCartridgeComponent>();
+        while (query.MoveNext(out var uid, out var comp))
+        {
+            RefreshBountyUI((uid, comp));
+        }
     }
 
     public void SendBountyNotification(EntityUid cartridgeUid, string? sender, string msg)
@@ -119,10 +99,11 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
                 return;
             }
 
-
-
+            // Don't accept messages from entities with no mind.
+            // Maybe change this later? Idk
             if (!GetMindFromCartridge(ent.Owner, out var mindId, out var mindComp))
             {
+                Log.Warning("OnUiMessage: Received a cartridge command message from an entity with no mind. Ignoring message.");
                 return;
             }
 
@@ -136,28 +117,34 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
                             return;
                         }
 
-                        foreach (var item in contract.Prototype.Objectives)
-                        {
-                            if (!_mind.TryAddObjective(mindId, mindComp, item))
-                            {
-                                Log.Error($"Failed to create objective: {item}");
-                            }
+                        var ev = new OnAntagBountyAcceptedEvent(
+                            contract,
+                            ent
+                        );
 
-                            //_roleSystem.MindAddRole(mindId, "MindRoleBountyThief");
-                        }
+                        RaiseLocalEvent(ref ev);
 
                         contract.State = AntagBountyContract.BountyState.Accepted;
                     }
                     break;
                 case AntagBountyContractCommand.RejectBounty:
-                    if (contract.State != AntagBountyContract.BountyState.Offered)
                     {
-                        Log.Error($"Contract {contract.Bounty} is not in an offered state, cannot reject.");
-                        return;
-                    }
+                        if (contract.State != AntagBountyContract.BountyState.Offered)
+                        {
+                            Log.Error($"Contract {contract.Bounty} is not in an offered state, cannot reject.");
+                            return;
+                        }
 
-                    contract.State = AntagBountyContract.BountyState.Rejected;
-                    break;
+                        var ev = new OnAntagBountyRejectedEvent(
+                            contract,
+                            ent
+                        );
+
+                        RaiseLocalEvent(ref ev);
+
+                        contract.State = AntagBountyContract.BountyState.Rejected;
+                        break;
+                    }
             }
 
             RefreshBountyUI(ent);

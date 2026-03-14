@@ -24,11 +24,18 @@ using System.Linq;
 
 namespace Content.Server._EGG.BountyContracts.Objectives.Systems;
 
+public sealed partial class AntagBountyContractStealCargo : AntagBountyContract
+{
+    public AntagBountyContractStealCargo(BountyContract bounty)
+        : base(bounty)
+    {
+    }
+}
+
 public sealed partial class StealCargoObjectiveSystem : EntitySystem
 {
     [Dependency] private readonly EGGBountyContractSystem _eggBountyContractSystem = default!;
     [Dependency] private readonly SharedIdCardSystem _idCardSystem = default!;
-    [Dependency] private readonly EntityLookupSystem _lookup = default!;
     [Dependency] private readonly PricingSystem _pricing = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly IPlayerManager _playerManager = default!;
@@ -45,11 +52,14 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         // Used for deciding which player cargo should be stolen from
         SubscribeLocalEvent<DecideAntagBountiesEvent>(OnDecideAntagBounties);
 
+        SubscribeLocalEvent<OnAntagBountyAcceptedEvent>(OnBountyAccepted);
+
         SubscribeLocalEvent<StealCargoObjectiveComponent, ObjectiveAssignedEvent>(OnAssigned);
         SubscribeLocalEvent<StealCargoObjectiveComponent, ObjectiveAfterAssignEvent>(OnAfterAssign);
         SubscribeLocalEvent<StealCargoObjectiveComponent, ObjectiveGetProgressEvent>(OnGetProgress);
     }
-    private void OnDecideAntagBounties(DecideAntagBountiesEvent ev)
+
+    private void OnDecideAntagBounties(ref DecideAntagBountiesEvent ev)
     {
         Log.Debug("Deciding antag bounties");
 
@@ -57,11 +67,16 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         if (playerWithMostCargo == null)
         {
             Log.Debug("No player found with cargo on their ship");
-            return;
+            //return;
         }
 
-        var (playerSession, cargoValue) = playerWithMostCargo.Value;
-        Log.Debug($"Player {playerSession.Name} has the highest cargo value: {cargoValue}");
+        var (playerSession, cargoValue) = playerWithMostCargo.HasValue ? playerWithMostCargo.Value : (null, 0.0);
+        if (playerSession is not null)
+        {
+            Log.Debug($"Player {playerSession.Name} has the highest cargo value: {cargoValue}");
+        }
+
+        playerSession ??= _random.Pick(_playerManager.Sessions);
 
         if (playerSession is null)
         {
@@ -85,14 +100,33 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
             return;
         }
 
+        // Don't offer more than one contract
+        if (comp.Contracts.Any(item => item.Value is AntagBountyContractStealCargo bounty && bounty.State == AntagBountyContract.BountyState.Offered))
+        {
+            Log.Debug("Not offering a new bounty");
+            return;
+        }
 
-        // AntagBountyStealCargo
-        var prototype = _protoMan.Index<AntagBountyPrototype>("AntagBountyStealCargo");
+        var id = "AntagBountyStealCargo";
+        var prototype = _protoMan.Index<AntagBountyPrototype>(id);
+
         var nextContractId = comp.GetNextContractId();
-        var newBounty = new AntagBountyContract(prototype,
-            new BountyContract(nextContractId, BountyContractCategory.Other, prototype.Name, prototype.Reward, GetNetEntity(cartridgeUid.Value), null, null, prototype.Description, null, "antag"));
+        var bounty = AntagBountyContract.MakeBountyFromPrototype(nextContractId, GetNetEntity(cartridgeUid.Value), prototype);
+        var newBounty = new AntagBountyContractStealCargo(bounty);
+
         comp.Contracts.Add(nextContractId, newBounty);
         _eggBountyContractSystem.SendBountyNotification(cartridgeUid.Value, null, "New antag bounty!");
+    }
+
+
+    private void OnBountyAccepted(ref OnAntagBountyAcceptedEvent ev)
+    {
+        if (ev.Contract is not AntagBountyContractStealCargo contract)
+        {
+            return;
+        }
+
+        Log.Debug("Butthole sniffers!");
     }
 
     /// <summary>

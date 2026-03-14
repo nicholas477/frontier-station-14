@@ -26,6 +26,8 @@ public sealed partial class AntagBountyPrototype : IPrototype
     [DataField]
     public int Reward = 0;
 
+    [DataField]
+    public string EntryUIId = "antag";
 
     /// <summary>
     /// List of static objectives to give.

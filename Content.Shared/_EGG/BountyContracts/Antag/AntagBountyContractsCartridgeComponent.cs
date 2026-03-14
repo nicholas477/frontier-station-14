@@ -5,7 +5,8 @@ using System.Linq;
 
 namespace Content.Shared._EGG.BountyContracts.Antag;
 
-public sealed partial class AntagBountyContract
+[Virtual]
+public partial class AntagBountyContract
 {
     public enum BountyState
     {
@@ -14,18 +15,31 @@ public sealed partial class AntagBountyContract
         Rejected
     }
 
-    public AntagBountyContract(AntagBountyPrototype prototype, BountyContract bounty)
+    public AntagBountyContract(BountyContract bounty)
     {
-        Prototype = prototype;
         Bounty = bounty;
     }
-    public AntagBountyPrototype Prototype;
     public BountyContract Bounty;
     public BountyState State = BountyState.Offered;
+
+    public static BountyContract MakeBountyFromPrototype(uint id, NetEntity entity, AntagBountyPrototype prototype)
+    {
+        return new BountyContract(
+            id,
+            BountyContractCategory.Other,
+            prototype.Name,
+            prototype.Reward,
+            entity,
+            null,
+            null,
+            prototype.Description,
+            null,
+            prototype.EntryUIId
+        );
+    }
 }
 
 [RegisterComponent]
-[Access(typeof(SharedEGGBountyContractSystem))]
 public sealed partial class AntagBountyContractsCartridgeComponent : Component
 {
     public Dictionary<uint, AntagBountyContract> Contracts = new Dictionary<uint, AntagBountyContract>();
