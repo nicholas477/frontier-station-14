@@ -70,19 +70,19 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
     private void OnDecideAntagBounties(ref DecideAntagBountiesEvent ev)
     {
-        Log.Debug("Deciding antag bounties");
+        //Log.Debug("Deciding antag bounties");
 
         var playerWithMostCargo = FindPlayerWithHighestCargoValue();
         if (playerWithMostCargo == null)
         {
-            Log.Debug("No player found with cargo on their ship");
+            //Log.Debug("No player found with cargo on their ship");
             //return;
         }
 
         var (playerToStealFrom, cargoValue) = playerWithMostCargo.HasValue ? playerWithMostCargo.Value : (null, 0.0);
         if (playerToStealFrom is not null)
         {
-            Log.Debug($"Player {playerToStealFrom.Name} has the highest cargo value: {cargoValue}");
+            //Log.Debug($"Player {playerToStealFrom.Name} has the highest cargo value: {cargoValue}");
         }
 
         playerToStealFrom ??= _random.Pick(_playerManager.Sessions);
@@ -98,7 +98,7 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
         if (validSessions.Count == 0)
         {
-            Log.Debug("No valid players found to give \"steal cargo\" objective");
+            //Log.Debug("No valid players found to give \"steal cargo\" objective");
             return;
         }
 
@@ -112,7 +112,7 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         // Don't offer more than one contract
         if (comp.Contracts.Any(item => item.Value is AntagBountyContractStealCargo bounty && bounty.State == AntagBountyContract.BountyState.Offered))
         {
-            Log.Debug("Not offering a new bounty");
+            //Log.Debug("Not offering a new bounty");
             return;
         }
 
@@ -158,13 +158,8 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
             return;
         }
 
-        // Configure the objective with the target player and their ship
+        // Configure the objective with the target player
         stealComp.PlayerToStealFrom = contract.PlayerToStealFrom;
-
-        if (contract.PlayerToStealFrom.AttachedEntity is { Valid: true } playerUid)
-        {
-            stealComp.TargetShipGrid = GetPlayerShip(playerUid);
-        }
 
         var objectiveEv = new ObjectiveAssignedEvent(ev.Mind.Owner, ev.Mind.Comp);
         RaiseLocalEvent(uid, ref objectiveEv);
@@ -202,7 +197,7 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
             var cargoValue = GetPlayerShipCargoValue(playerUid);
 
-            Log.Debug($"Player {session.Name} has cargo value: {cargoValue}");
+            //Log.Debug($"Player {session.Name} has cargo value: {cargoValue}");
 
             if (cargoValue > highestValue)
             {
@@ -304,7 +299,7 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         //    ? Loc.GetString(condition.Comp.DescriptionMultiplyText, ("itemName", localizedName), ("count", condition.Comp.CollectionSize))
         //    : Loc.GetString(condition.Comp.DescriptionText, ("itemName", localizedName));
 
-        var targetValueStr = condition.Comp.TargetStolenValue.ToString("F2");
+        var targetValueStr = condition.Comp.TargetStolenValue.ToString("F0");
         
         // Get the character's name
         var playerName = "Unknown";
@@ -338,12 +333,23 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
     /// </summary>
     private void OnEntityParentChanged(Entity<TransformComponent> ent, ref EntParentChangedMessage args)
     {
+        //Log.Debug($"Entity parent changed! Ent: {ent}");
+
+
         // Find all active steal cargo objectives
+        // TONS of items change parent, make this code less ass
         var query = AllEntityQuery<StealCargoObjectiveComponent>();
         while (query.MoveNext(out var objectiveUid, out var objective))
         {
             // Skip if not configured yet
-            if (objective.TargetShipGrid == null || objective.PlayerToStealFrom == null)
+            if (objective.PlayerToStealFrom == null)
+                continue;
+
+            if (objective.GetPlayerEntity() is not { Valid: true } playerUid)
+                continue;
+
+            var targetShipGrid = GetPlayerShip(playerUid);
+            if (targetShipGrid is null)
                 continue;
 
             // Skip if the entity was already counted
@@ -351,23 +357,26 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
                 continue;
 
             // Check if the item is leaving the target ship
-            if (args.OldParent == objective.TargetShipGrid && ent.Comp.GridUid != objective.TargetShipGrid)
+            if (args.OldParent == targetShipGrid && ent.Comp.GridUid != targetShipGrid)
             {
                 // Skip certain entities that shouldn't be counted
                 if (HasComp<ActorComponent>(ent))
                     continue;
 
-                // Get the value of this item
-                var itemValue = _pricing.GetPrice(ent);
-                if (itemValue <= 0)
-                    continue;
+                var stolenCargoComp = EnsureComp<StolenCargoComponent>(ent);
+                stolenCargoComp.LastOwner = objective.PlayerToStealFrom;
 
-                // Add to stolen value
-                objective.CurrentStolenValue += itemValue;
-                objective.StolenItems.Add(ent.Owner);
-                Dirty(objectiveUid, objective);
+                //// Get the value of this item
+                //var itemValue = _pricing.GetPrice(ent);
+                //if (itemValue <= 0)
+                //    continue;
 
-                Log.Debug($"Item {ToPrettyString(ent)} left target ship with value {itemValue}. Total stolen: {objective.CurrentStolenValue}");
+                //// Add to stolen value
+                //objective.CurrentStolenValue += itemValue;
+                //objective.StolenItems.Add(ent.Owner);
+                //Dirty(objectiveUid, objective);
+
+                //Log.Debug($"Item {ToPrettyString(ent)} left target ship with value {itemValue}. Total stolen: {objective.CurrentStolenValue}");
             }
         }
     }

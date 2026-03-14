@@ -17,11 +17,10 @@ public sealed partial class StealCargoObjectiveComponent : Component
     [DataField]
     public ICommonSession? PlayerToStealFrom;
 
-    /// <summary>
-    /// The grid/ship entity that items are being stolen from.
-    /// </summary>
-    [DataField]
-    public EntityUid? TargetShipGrid;
+    public EntityUid? GetPlayerEntity()
+    {
+        return PlayerToStealFrom?.AttachedEntity;
+    }
 
     /// <summary>
     /// The target dollar amount of cargo to steal.
