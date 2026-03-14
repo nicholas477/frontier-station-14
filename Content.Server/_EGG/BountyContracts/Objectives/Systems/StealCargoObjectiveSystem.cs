@@ -305,7 +305,13 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         //    : Loc.GetString(condition.Comp.DescriptionText, ("itemName", localizedName));
 
         var targetValueStr = condition.Comp.TargetStolenValue.ToString("F2");
-        var playerName = condition.Comp.PlayerToStealFrom?.Name ?? "Unknown";
+        
+        // Get the character's name
+        var playerName = "Unknown";
+        if (condition.Comp.PlayerToStealFrom?.AttachedEntity is { Valid: true } playerEntity)
+        {
+            playerName = MetaData(playerEntity).EntityName;
+        }
 
         _metaData.SetEntityName(condition.Owner, "Steal Cargo", args.Meta);
         _metaData.SetEntityDescription(condition.Owner, $"Steal {targetValueStr} credits worth of cargo from {playerName}'s ship.", args.Meta);
