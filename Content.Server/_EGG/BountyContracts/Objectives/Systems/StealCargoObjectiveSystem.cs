@@ -11,6 +11,7 @@ using Content.Shared._NF.Shipyard.Components;
 using Content.Shared.Access.Systems;
 using Content.Shared.Cargo.Components;
 using Content.Shared.CartridgeLoader;
+using Content.Shared.Mind;
 using Content.Shared.Movement.Components;
 using Content.Shared.Objectives.Components;
 using Content.Shared.Objectives.Systems;
@@ -20,8 +21,8 @@ using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Robust.Shared.Toolshed.TypeParsers;
-using Content.Shared.Mind;
 using System.Linq;
+using static Robust.Shared.Physics.DynamicTree;
 
 namespace Content.Server._EGG.BountyContracts.Objectives.Systems;
 
@@ -62,6 +63,9 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         SubscribeLocalEvent<StealCargoObjectiveComponent, ObjectiveAssignedEvent>(OnAssigned);
         SubscribeLocalEvent<StealCargoObjectiveComponent, ObjectiveAfterAssignEvent>(OnAfterAssign);
         SubscribeLocalEvent<StealCargoObjectiveComponent, ObjectiveGetProgressEvent>(OnGetProgress);
+
+        // Track when entities change parent (leave the target grid)
+        SubscribeLocalEvent<TransformComponent, EntParentChangedMessage>(OnEntityParentChanged);
     }
 
     private void OnDecideAntagBounties(ref DecideAntagBountiesEvent ev)
@@ -137,7 +141,45 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
             return;
         }
 
-        _mind.TryAddObjective(ev.Mind.Owner, ev.Mind.Comp, "");
+        // Spawn a new objective component, set up its variables
+        var proto = "EGGAntagStealCargoObjective";
+        var uid = Spawn(proto);
+        if (!TryComp<ObjectiveComponent>(uid, out var comp))
+        {
+            Del(uid);
+            Log.Error($"Invalid objective prototype {proto}, missing ObjectiveComponent");
+            return;
+        }
+
+        if (!TryComp<StealCargoObjectiveComponent>(uid, out var stealComp))
+        {
+            Del(uid);
+            Log.Error($"Invalid objective prototype {proto}, missing ObjectiveComponent");
+            return;
+        }
+
+        // Configure the objective with the target player and their ship
+        stealComp.PlayerToStealFrom = contract.PlayerToStealFrom;
+
+        if (contract.PlayerToStealFrom.AttachedEntity is { Valid: true } playerUid)
+        {
+            stealComp.TargetShipGrid = GetPlayerShip(playerUid);
+        }
+
+        var objectiveEv = new ObjectiveAssignedEvent(ev.Mind.Owner, ev.Mind.Comp);
+        RaiseLocalEvent(uid, ref objectiveEv);
+        if (objectiveEv.Cancelled)
+        {
+            Del(uid);
+            Log.Warning($"Could not assign objective {proto}, deleted it");
+            return;
+        }
+
+        // let the title description and icon be set by systems
+        var afterEv = new ObjectiveAfterAssignEvent(ev.Mind.Owner, ev.Mind.Comp, comp, MetaData(uid));
+        RaiseLocalEvent(uid, ref afterEv);
+
+        _mind.AddObjective(ev.Mind.Owner, ev.Mind.Comp, uid);
 
         Log.Debug("Butthole sniffers!");
     }
@@ -262,13 +304,65 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         //    ? Loc.GetString(condition.Comp.DescriptionMultiplyText, ("itemName", localizedName), ("count", condition.Comp.CollectionSize))
         //    : Loc.GetString(condition.Comp.DescriptionText, ("itemName", localizedName));
 
+        var targetValueStr = condition.Comp.TargetStolenValue.ToString("F2");
+        var playerName = condition.Comp.PlayerToStealFrom?.Name ?? "Unknown";
+
         _metaData.SetEntityName(condition.Owner, "Steal Cargo", args.Meta);
-        _metaData.SetEntityDescription(condition.Owner, "Steal some cargo idiot", args.Meta);
-        //_objectives.SetIcon(condition.Owner, group.Sprite, args.Objective);
+        _metaData.SetEntityDescription(condition.Owner, $"Steal {targetValueStr} credits worth of cargo from {playerName}'s ship.", args.Meta);
     }
 
     private void OnGetProgress(Entity<StealCargoObjectiveComponent> condition, ref ObjectiveGetProgressEvent args)
     {
-        args.Progress = 0.0f;
+        if (condition.Comp.TargetStolenValue <= 0)
+        {
+            args.Progress = 0;
+            return;
+        }
+
+        // Calculate progress as a ratio of stolen value to target value
+        var progress = (float)(condition.Comp.CurrentStolenValue / condition.Comp.TargetStolenValue);
+
+        // Cap at 1.0 so it doesn't go above 100%
+        args.Progress = (byte)Math.Min(progress * 100, 100);
+    }
+
+    /// <summary>
+    /// Tracks when entities leave the target player's ship grid.
+    /// If they were stolen from the target ship, adds their value to the objective.
+    /// </summary>
+    private void OnEntityParentChanged(Entity<TransformComponent> ent, ref EntParentChangedMessage args)
+    {
+        // Find all active steal cargo objectives
+        var query = AllEntityQuery<StealCargoObjectiveComponent>();
+        while (query.MoveNext(out var objectiveUid, out var objective))
+        {
+            // Skip if not configured yet
+            if (objective.TargetShipGrid == null || objective.PlayerToStealFrom == null)
+                continue;
+
+            // Skip if the entity was already counted
+            if (objective.StolenItems.Contains(ent.Owner))
+                continue;
+
+            // Check if the item is leaving the target ship
+            if (args.OldParent == objective.TargetShipGrid && ent.Comp.GridUid != objective.TargetShipGrid)
+            {
+                // Skip certain entities that shouldn't be counted
+                if (HasComp<ActorComponent>(ent))
+                    continue;
+
+                // Get the value of this item
+                var itemValue = _pricing.GetPrice(ent);
+                if (itemValue <= 0)
+                    continue;
+
+                // Add to stolen value
+                objective.CurrentStolenValue += itemValue;
+                objective.StolenItems.Add(ent.Owner);
+                Dirty(objectiveUid, objective);
+
+                Log.Debug($"Item {ToPrettyString(ent)} left target ship with value {itemValue}. Total stolen: {objective.CurrentStolenValue}");
+            }
+        }
     }
 }
