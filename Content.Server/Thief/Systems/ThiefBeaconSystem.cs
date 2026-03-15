@@ -92,4 +92,19 @@ public sealed class ThiefBeaconSystem : EntitySystem
         _popup.PopupEntity(Loc.GetString("thief-fulton-clear"), beacon);
         area.Owners.Clear();
     }
+
+    //Begin EGG
+    /// <summary>
+    /// Gets the owners of a steal area component on a beacon.
+    /// </summary>
+    /// <param name="beacon">The beacon entity to get owners from</param>
+    /// <returns>The HashSet of mind owners, or null if the beacon has no steal area component</returns>
+    public HashSet<EntityUid>? GetStealAreaOwners(EntityUid beacon)
+    {
+        if (!TryComp<StealAreaComponent>(beacon, out var area))
+            return null;
+
+        return area.Owners;
+    }
+    //End EGG
 }

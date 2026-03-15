@@ -1,9 +1,16 @@
 using Content.Server._EGG.BountyContracts.Objectives.Components;
 using Content.Server._NF.BountyContracts;
 using Content.Server.Access.Systems;
+using Content.Server.Antag;
 using Content.Server.Cargo.Components;
 using Content.Server.Cargo.Systems;
+using Content.Server.GameTicking.Rules;
+using Content.Server.GameTicking.Rules.Components;
 using Content.Server.Objectives.Components;
+using Content.Server.PDA.Ringer;
+using Content.Server.Thief.Components;
+using Content.Server.Thief.Systems;
+using Content.Server.Traitor.Uplink;
 using Content.Shared._EGG.BountyContracts;
 using Content.Shared._EGG.BountyContracts.Antag;
 using Content.Shared._NF.BountyContracts;
@@ -11,16 +18,22 @@ using Content.Shared._NF.Shipyard.Components;
 using Content.Shared.Access.Systems;
 using Content.Shared.Cargo.Components;
 using Content.Shared.CartridgeLoader;
+using Content.Shared.FixedPoint;
+using Content.Shared.Hands.EntitySystems;
+using Content.Shared.Interaction;
 using Content.Shared.Mind;
 using Content.Shared.Movement.Components;
 using Content.Shared.Objectives.Components;
 using Content.Shared.Objectives.Systems;
+using Content.Shared.PDA;
+using Content.Shared.Roles;
 using Robust.Server.Player;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Robust.Shared.Toolshed.TypeParsers;
+using System.ComponentModel;
 using System.Linq;
 using static Robust.Shared.Physics.DynamicTree;
 
@@ -40,16 +53,23 @@ public sealed partial class AntagBountyContractStealCargo : AntagBountyContract
 public sealed partial class StealCargoObjectiveSystem : EntitySystem
 {
     [Dependency] private readonly EGGBountyContractSystem _eggBountyContractSystem = default!;
+    [Dependency] private readonly EntityLookupSystem _lookup = default!;
+    [Dependency] private readonly AntagSelectionSystem _antag = default!;
     [Dependency] private readonly SharedIdCardSystem _idCardSystem = default!;
     [Dependency] private readonly PricingSystem _pricing = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
+    [Dependency] private readonly SharedInteractionSystem _interaction = default!;
     [Dependency] private readonly IPlayerManager _playerManager = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
-
+    [Dependency] private readonly SharedRoleSystem _roles = default!;
     [Dependency] private readonly SharedObjectivesSystem _objectives = default!;
     [Dependency] private readonly SharedMindSystem _mind = default!;
     [Dependency] private readonly MetaDataSystem _metaData = default!;
+    [Dependency] private readonly UplinkSystem _uplink = default!;
+    [Dependency] private readonly TraitorRuleSystem _traitorRule = default!;
+    [Dependency] private readonly ThiefBeaconSystem _thiefBeacon = default!;
+    [Dependency] private readonly SharedHandsSystem _hands = default!;
 
     public override void Initialize()
     {
@@ -175,6 +195,49 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         RaiseLocalEvent(uid, ref afterEv);
 
         _mind.AddObjective(ev.Mind.Owner, ev.Mind.Comp, uid);
+        _roles.MindAddRole(ev.Mind.Owner, "MindRoleBountyThief");
+
+        if (ev.Mind.Comp.OwnedEntity is not { Valid : true } traitor)
+        {
+            Log.Error("Somehow a player with no body accepted a bounty on a PDA");
+            return;
+        }
+
+        // Give the player a thief uplink with 20 telecrystals
+        var uplinkBalance = FixedPoint2.New(20);
+        bool uplinked = _uplink.AddUplink(traitor, uplinkBalance, giveDiscounts: true);
+
+        string briefing = "";
+        Note[]? code = null;
+
+        var pda = _uplink.FindUplinkTarget(traitor);
+        if (pda is not null && uplinked)
+        {
+            //Log.Debug($"MakeTraitor {ToPrettyString(traitor)} - Uplink is PDA");
+            // Codes are only generated if the uplink is a PDA
+            var generateCodeEv = new GenerateUplinkCodeEvent();
+            RaiseLocalEvent(pda.Value, ref generateCodeEv);
+
+            if (generateCodeEv.Code is { } generatedCode)
+            {
+                code = generatedCode;
+
+                // If giveUplink is false the uplink code part is omitted
+                briefing = string.Format("{0}\n{1}",
+                    briefing,
+                    Loc.GetString("traitor-role-uplink-code-short", ("code", string.Join("-", code).Replace("sharp", "#"))));
+                //return (code, briefing);
+            }
+        }
+
+        _antag.SendBriefing(traitor, briefing, null, null);
+
+        // Give the player the thief beacon and satchel
+        var thiefBeacon = Spawn("ThiefBeacon", Transform(traitor).Coordinates);
+        var satchelThief = Spawn("SatchelThief", Transform(traitor).Coordinates);
+
+        _hands.TryPickupAnyHand(traitor, thiefBeacon);
+        _hands.TryPickupAnyHand(traitor, satchelThief);
 
         Log.Debug("Butthole sniffers!");
     }
@@ -260,17 +323,14 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
     //Set the visual, name, icon for the objective.
     private void OnAfterAssign(Entity<StealCargoObjectiveComponent> condition, ref ObjectiveAfterAssignEvent args)
     {
-        //var group = _proto.Index(condition.Comp.StealGroup);
-        //string localizedName = Loc.GetString(group.Name);
+        UpdateStealCargoMetadata(condition, args.Meta);
+    }
 
-        //var title = condition.Comp.OwnerText == null
-        //    ? Loc.GetString(condition.Comp.ObjectiveNoOwnerText, ("itemName", localizedName))
-        //    : Loc.GetString(condition.Comp.ObjectiveText, ("owner", Loc.GetString(condition.Comp.OwnerText)), ("itemName", localizedName));
+    private void UpdateStealCargoMetadata(Entity<StealCargoObjectiveComponent> condition, MetaDataComponent? meta)
+    {
+        meta ??= TryComp(condition.Owner, out MetaDataComponent? metaComp) ? metaComp : null;
 
-        //var description = condition.Comp.CollectionSize > 1
-        //    ? Loc.GetString(condition.Comp.DescriptionMultiplyText, ("itemName", localizedName), ("count", condition.Comp.CollectionSize))
-        //    : Loc.GetString(condition.Comp.DescriptionText, ("itemName", localizedName));
-
+        _metaData.SetEntityName(condition.Owner, "Steal Cargo", meta);
         var targetValueStr = condition.Comp.TargetStolenValue.ToString("F0");
 
         // Get the character's name
@@ -288,12 +348,14 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
             }
         }
 
-        _metaData.SetEntityName(condition.Owner, "Steal Cargo", args.Meta);
-        _metaData.SetEntityDescription(condition.Owner, $"Steal {targetValueStr} credits worth of cargo from {playerName}'s ship, the {shipName}.", args.Meta);
+        _metaData.SetEntityDescription(condition.Owner, $"Steal {targetValueStr} credits worth of cargo from {playerName}'s ship, the {shipName}.", meta);
     }
 
     private void OnGetProgress(Entity<StealCargoObjectiveComponent> condition, ref ObjectiveGetProgressEvent args)
     {
+        // Update the metadata for the description (in case the target player changes ships or name, etc)
+        UpdateStealCargoMetadata(condition, null);
+
         if (condition.Comp.TargetStolenValue <= 0)
         {
             args.Progress = 0;
@@ -307,35 +369,98 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
             return;
         }
 
-        // Get the thief's ship
-        var thiefShip = GetPlayerShip(thiefEntity);
-        if (thiefShip == null)
-        {
-            args.Progress = 0;
-            return;
-        }
+        // Track entities that have been appraised to prevent double counting
+        var appraisedEntities = new HashSet<EntityUid>();
 
         // Sum the value of all stolen cargo on the thief's ship
         double totalStolenValue = 0.0;
-        var stolenCargoQuery = EntityQueryEnumerator<StolenCargoComponent, TransformComponent>();
-        while (stolenCargoQuery.MoveNext(out var cargoUid, out var stolenComp, out var xform))
+
+        // Get the thief's ship
+        var thiefShip = GetPlayerShip(thiefEntity);
+        if (thiefShip != null)
         {
-            // Check if this item was stolen from the target player
-            if (stolenComp.LastOwner != condition.Comp.PlayerToStealFrom)
-                continue;
+            var stolenCargoQuery = EntityQueryEnumerator<StolenCargoComponent, TransformComponent>();
+            while (stolenCargoQuery.MoveNext(out var cargoUid, out var stolenComp, out var xform))
+            {
+                // Check if this item was stolen from the target player
+                if (stolenComp.LastOwner != condition.Comp.PlayerToStealFrom)
+                    continue;
 
-            // Check if the item is on the thief's ship
-            if (xform.GridUid != thiefShip)
-                continue;
+                // Check if the item is on the thief's ship
+                if (xform.GridUid != thiefShip)
+                    continue;
 
-            // Add the item's value
-            var itemValue = _pricing.GetPrice(cargoUid);
-            totalStolenValue += itemValue;
+                // Add the item's value
+                var itemValue = _pricing.GetPrice(cargoUid);
+                totalStolenValue += itemValue;
+                appraisedEntities.Add(cargoUid);
+            }
+        }
+
+        var beaconQuery = EntityQueryEnumerator<StealAreaComponent, TransformComponent>();
+        while (beaconQuery.MoveNext(out var beaconUid, out var areaComp, out var beaconXform))
+        {
+            // Check if the beacon is owned by the player
+            var owners = _thiefBeacon.GetStealAreaOwners(beaconUid);
+            if (owners is null)
+            {
+                continue;
+            }
+
+            if (!owners.Contains(args.MindId))
+            {
+                continue;
+            }
+
+            // Add the value of all items currently in the beacon's area
+            totalStolenValue += GetBeaconAreaValue(beaconUid, condition.Comp.PlayerToStealFrom, appraisedEntities);
         }
 
         // Calculate progress as a ratio of stolen value to target value
         var progress = (float)(totalStolenValue / condition.Comp.TargetStolenValue);
         args.Progress = Math.Clamp(progress, 0.0f, 1.0f);
+    }
+
+    private double GetBeaconAreaValue(EntityUid beacon, ICommonSession? targetPlayer, HashSet<EntityUid> appraisedEntities)
+    {
+        if (!TryComp<StealAreaComponent>(beacon, out var area))
+            return 0;
+
+        if (targetPlayer == null)
+            return 0;
+
+        double totalValue = 0.0;
+        var nearestEnts = new HashSet<Entity<TransformComponent>>();
+        var xform = Transform(beacon);
+
+        // Get all entities within the area's range
+        _lookup.GetEntitiesInRange<TransformComponent>(xform.Coordinates, area.Range, nearestEnts);
+
+        foreach (var ent in nearestEnts)
+        {
+            // Skip if already appraised (on thief's ship)
+            if (appraisedEntities.Contains(ent.Owner))
+                continue;
+
+            // Check if the entity has StolenCargoComponent
+            if (!TryComp<StolenCargoComponent>(ent, out var stolenComp))
+                continue;
+
+            // Check if the item was stolen from the target player
+            if (stolenComp.LastOwner != targetPlayer)
+                continue;
+
+            // Optional: Check if unobstructed
+            if (!_interaction.InRangeUnobstructed((beacon, xform), (ent, ent.Comp), range: area.Range))
+                continue;
+
+            // Get the value of this item
+            var itemValue = _pricing.GetPrice(ent.Owner);
+            totalValue += itemValue;
+            appraisedEntities.Add(ent.Owner);
+        }
+
+        return totalValue;
     }
 
     /// <summary>
