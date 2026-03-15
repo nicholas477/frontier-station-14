@@ -26,7 +26,7 @@ public sealed partial class StealCargoObjectiveComponent : Component
     /// The target dollar amount of cargo to steal.
     /// </summary>
     [DataField]
-    public double TargetStolenValue = 1000.0;
+    public double TargetStolenValue = 10000.0;
 
     /// <summary>
     /// The current dollar amount of cargo stolen so far.

@@ -300,16 +300,24 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         //    : Loc.GetString(condition.Comp.DescriptionText, ("itemName", localizedName));
 
         var targetValueStr = condition.Comp.TargetStolenValue.ToString("F0");
-        
+
         // Get the character's name
         var playerName = "Unknown";
+        var shipName = "Unknown";
         if (condition.Comp.PlayerToStealFrom?.AttachedEntity is { Valid: true } playerEntity)
         {
             playerName = MetaData(playerEntity).EntityName;
+
+            // Get the ship name
+            var shipUid = GetPlayerShip(playerEntity);
+            if (shipUid is { Valid: true })
+            {
+                shipName = MetaData(shipUid.Value).EntityName;
+            }
         }
 
         _metaData.SetEntityName(condition.Owner, "Steal Cargo", args.Meta);
-        _metaData.SetEntityDescription(condition.Owner, $"Steal {targetValueStr} credits worth of cargo from {playerName}'s ship.", args.Meta);
+        _metaData.SetEntityDescription(condition.Owner, $"Steal {targetValueStr} credits worth of cargo from {playerName}'s ship, the {shipName}.", args.Meta);
     }
 
     private void OnGetProgress(Entity<StealCargoObjectiveComponent> condition, ref ObjectiveGetProgressEvent args)
@@ -320,11 +328,42 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
             return;
         }
 
-        // Calculate progress as a ratio of stolen value to target value
-        var progress = (float)(condition.Comp.CurrentStolenValue / condition.Comp.TargetStolenValue);
+        // Get the mind's entity (the thief)
+        if (!TryComp<MindComponent>(args.MindId, out var mind) || mind.OwnedEntity is not { Valid: true } thiefEntity)
+        {
+            args.Progress = 0;
+            return;
+        }
 
-        // Cap at 1.0 so it doesn't go above 100%
-        args.Progress = (byte)Math.Min(progress * 100, 100);
+        // Get the thief's ship
+        var thiefShip = GetPlayerShip(thiefEntity);
+        if (thiefShip == null)
+        {
+            args.Progress = 0;
+            return;
+        }
+
+        // Sum the value of all stolen cargo on the thief's ship
+        double totalStolenValue = 0.0;
+        var stolenCargoQuery = EntityQueryEnumerator<StolenCargoComponent, TransformComponent>();
+        while (stolenCargoQuery.MoveNext(out var cargoUid, out var stolenComp, out var xform))
+        {
+            // Check if this item was stolen from the target player
+            if (stolenComp.LastOwner != condition.Comp.PlayerToStealFrom)
+                continue;
+
+            // Check if the item is on the thief's ship
+            if (xform.GridUid != thiefShip)
+                continue;
+
+            // Add the item's value
+            var itemValue = _pricing.GetPrice(cargoUid);
+            totalStolenValue += itemValue;
+        }
+
+        // Calculate progress as a ratio of stolen value to target value
+        var progress = (float)(totalStolenValue / condition.Comp.TargetStolenValue);
+        args.Progress = Math.Clamp(progress, 0.0f, 1.0f);
     }
 
     /// <summary>
@@ -335,6 +374,15 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
     {
         //Log.Debug($"Entity parent changed! Ent: {ent}");
 
+        if (!TryComp(ent.Owner, out MetaDataComponent? ownerMeta))
+        {
+            return;
+        }
+
+        if (ownerMeta.EntityLifeStage >= EntityLifeStage.Terminating)
+        {
+            return;
+        }
 
         // Find all active steal cargo objectives
         // TONS of items change parent, make this code less ass
