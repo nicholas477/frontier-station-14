@@ -253,36 +253,8 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         return true;
     }
 
-    /// start checks of target acceptability, and generation of start values.
     private void OnAssigned(Entity<StealCargoObjectiveComponent> condition, ref ObjectiveAssignedEvent args)
     {
-        //List<StealTargetComponent?> targetList = new();
-
-        //var query = AllEntityQuery<StealTargetComponent>();
-        //while (query.MoveNext(out var target))
-        //{
-        //    if (condition.Comp.StealGroup != target.StealGroup)
-        //        continue;
-
-        //    targetList.Add(target);
-        //}
-
-        //// cancel if the required items do not exist
-        //if (targetList.Count == 0 && condition.Comp.VerifyMapExistence)
-        //{
-        //    args.Cancelled = true;
-        //    return;
-        //}
-
-        ////setup condition settings
-        //var maxSize = condition.Comp.VerifyMapExistence
-        //    ? Math.Min(targetList.Count, condition.Comp.MaxCollectionSize)
-        //    : condition.Comp.MaxCollectionSize;
-        //var minSize = condition.Comp.VerifyMapExistence
-        //    ? Math.Min(targetList.Count, condition.Comp.MinCollectionSize)
-        //    : condition.Comp.MinCollectionSize;
-
-        //condition.Comp.CollectionSize = _random.Next(minSize, maxSize);
     }
 
     //Set the visual, name, icon for the objective.
@@ -413,18 +385,6 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
                 var stolenCargoComp = EnsureComp<StolenCargoComponent>(ent);
                 stolenCargoComp.LastOwner = objective.PlayerToStealFrom;
-
-                //// Get the value of this item
-                //var itemValue = _pricing.GetPrice(ent);
-                //if (itemValue <= 0)
-                //    continue;
-
-                //// Add to stolen value
-                //objective.CurrentStolenValue += itemValue;
-                //objective.StolenItems.Add(ent.Owner);
-                //Dirty(objectiveUid, objective);
-
-                //Log.Debug($"Item {ToPrettyString(ent)} left target ship with value {itemValue}. Total stolen: {objective.CurrentStolenValue}");
             }
         }
     }
