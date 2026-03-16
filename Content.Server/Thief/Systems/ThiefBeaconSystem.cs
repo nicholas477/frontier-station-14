@@ -11,6 +11,25 @@ using Robust.Shared.Audio.Systems;
 
 namespace Content.Server.Thief.Systems;
 
+//Begin EGG
+/// <summary>
+/// Event raised to determine if a user can set a beacon coordinate.
+/// </summary>
+public sealed class CanSetBeaconCoordinateEvent : EntityEventArgs
+{
+    public EntityUid User { get; }
+    public EntityUid Beacon { get; }
+    public bool CanSet { get; set; }
+
+    public CanSetBeaconCoordinateEvent(EntityUid user, EntityUid beacon)
+    {
+        User = user;
+        Beacon = beacon;
+        CanSet = false;
+    }
+}
+//End EGG
+
 /// <summary>
 /// <see cref="ThiefBeaconComponent"/>
 /// </summary>
@@ -38,8 +57,19 @@ public sealed class ThiefBeaconSystem : EntitySystem
             return;
 
         var mind = _mind.GetMind(args.User);
-        if (mind == null || !_roles.MindHasRole<ThiefRoleComponent>(mind.Value))
+        if (mind == null)
             return;
+
+        //Begin EGG
+        // Raise event to check if the user can set the beacon coordinate
+        var canSetEvent = new CanSetBeaconCoordinateEvent(args.User, beacon.Owner);
+        RaiseLocalEvent(canSetEvent);
+
+        canSetEvent.CanSet |= _roles.MindHasRole<ThiefRoleComponent>(mind.Value);
+
+        if (!canSetEvent.CanSet)
+            return;
+        //End EGG
 
         var user = args.User;
         args.Verbs.Add(new()

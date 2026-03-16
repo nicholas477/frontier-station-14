@@ -86,6 +86,9 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
         // Track when entities change parent (leave the target grid)
         SubscribeLocalEvent<TransformComponent, EntParentChangedMessage>(OnEntityParentChanged);
+
+        // Allow players with steal cargo objectives to use beacons
+        SubscribeLocalEvent<CanSetBeaconCoordinateEvent>(OnCanSetBeaconCoordinate);
     }
 
     private void OnDecideAntagBounties(ref DecideAntagBountiesEvent ev)
@@ -96,17 +99,10 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         if (playerWithMostCargo == null)
         {
             //Log.Debug("No player found with cargo on their ship");
-            //return;
+            return;
         }
 
         var (playerToStealFrom, cargoValue) = playerWithMostCargo.HasValue ? playerWithMostCargo.Value : (null, 0.0);
-        if (playerToStealFrom is not null)
-        {
-            //Log.Debug($"Player {playerToStealFrom.Name} has the highest cargo value: {cargoValue}");
-        }
-
-        playerToStealFrom ??= _random.Pick(_playerManager.Sessions);
-
         if (playerToStealFrom is null)
         {
             return;
@@ -195,7 +191,7 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         RaiseLocalEvent(uid, ref afterEv);
 
         _mind.AddObjective(ev.Mind.Owner, ev.Mind.Comp, uid);
-        _roles.MindAddRole(ev.Mind.Owner, "MindRoleBountyThief");
+        //_roles.MindAddRole(ev.Mind.Owner, "MindRoleBountyThief");
 
         if (ev.Mind.Comp.OwnedEntity is not { Valid : true } traitor)
         {
@@ -204,33 +200,33 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         }
 
         // Give the player a thief uplink with 20 telecrystals
-        var uplinkBalance = FixedPoint2.New(20);
-        bool uplinked = _uplink.AddUplink(traitor, uplinkBalance, giveDiscounts: true);
+        //var uplinkBalance = FixedPoint2.New(20);
+        //bool uplinked = _uplink.AddUplink(traitor, uplinkBalance, giveDiscounts: true);
 
-        string briefing = "";
-        Note[]? code = null;
+        //string briefing = "";
+        //Note[]? code = null;
 
-        var pda = _uplink.FindUplinkTarget(traitor);
-        if (pda is not null && uplinked)
-        {
-            //Log.Debug($"MakeTraitor {ToPrettyString(traitor)} - Uplink is PDA");
-            // Codes are only generated if the uplink is a PDA
-            var generateCodeEv = new GenerateUplinkCodeEvent();
-            RaiseLocalEvent(pda.Value, ref generateCodeEv);
+        //var pda = _uplink.FindUplinkTarget(traitor);
+        //if (pda is not null && uplinked)
+        //{
+        //    //Log.Debug($"MakeTraitor {ToPrettyString(traitor)} - Uplink is PDA");
+        //    // Codes are only generated if the uplink is a PDA
+        //    var generateCodeEv = new GenerateUplinkCodeEvent();
+        //    RaiseLocalEvent(pda.Value, ref generateCodeEv);
 
-            if (generateCodeEv.Code is { } generatedCode)
-            {
-                code = generatedCode;
+        //    if (generateCodeEv.Code is { } generatedCode)
+        //    {
+        //        code = generatedCode;
 
-                // If giveUplink is false the uplink code part is omitted
-                briefing = string.Format("{0}\n{1}",
-                    briefing,
-                    Loc.GetString("traitor-role-uplink-code-short", ("code", string.Join("-", code).Replace("sharp", "#"))));
-                //return (code, briefing);
-            }
-        }
+        //        // If giveUplink is false the uplink code part is omitted
+        //        briefing = string.Format("{0}\n{1}",
+        //            briefing,
+        //            Loc.GetString("traitor-role-uplink-code-short", ("code", string.Join("-", code).Replace("sharp", "#"))));
+        //        //return (code, briefing);
+        //    }
+        //}
 
-        _antag.SendBriefing(traitor, briefing, null, null);
+        //_antag.SendBriefing(traitor, briefing, null, null);
 
         // Give the player the thief beacon and satchel
         var thiefBeacon = Spawn("ThiefBeacon", Transform(traitor).Coordinates);
@@ -510,6 +506,42 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
                 var stolenCargoComp = EnsureComp<StolenCargoComponent>(ent);
                 stolenCargoComp.LastOwner = objective.PlayerToStealFrom;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Allows players with active steal cargo objectives to set beacon coordinates.
+    /// </summary>
+    private void OnCanSetBeaconCoordinate(CanSetBeaconCoordinateEvent ev)
+    {
+        // Check if the user has an active steal cargo objective
+        var query = AllEntityQuery<StealCargoObjectiveComponent>();
+        while (query.MoveNext(out var objectiveUid, out var objective))
+        {
+            // Skip if not configured yet
+            if (objective.PlayerToStealFrom == null)
+                continue;
+
+            // Get the player entity from the objective
+            if (objective.GetPlayerEntity() is not { Valid: true } playerEntity)
+                continue;
+
+            // Check if this objective's player matches the user requesting beacon access
+            // The user should be the thief, so we need to find the mind associated with them
+            if (!_mind.TryGetMind(ev.User, out var mindId, out _))
+                continue;
+
+            // Get the thief's mind entity
+            if (!TryComp<MindComponent>(mindId, out var thiefMind))
+                continue;
+
+            // The player in the objective should be the victim, not the thief
+            // The thief is the one accessing the beacon, so if they have a steal cargo objective, grant access
+            if (thiefMind.OwnedEntity == ev.User)
+            {
+                ev.CanSet = true;
+                return;
             }
         }
     }
