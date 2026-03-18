@@ -1,4 +1,5 @@
 using Content.Server._EGG.BountyContracts.Objectives.Components;
+using Content.Server._EGG.BountyContracts.Systems;
 using Content.Server._NF.BountyContracts;
 using Content.Server.Access.Systems;
 using Content.Server.Antag;
@@ -13,6 +14,7 @@ using Content.Server.Thief.Systems;
 using Content.Server.Traitor.Uplink;
 using Content.Shared._EGG.BountyContracts;
 using Content.Shared._EGG.BountyContracts.Antag;
+using Content.Shared._EGG.BountyContracts.Components;
 using Content.Shared._NF.BountyContracts;
 using Content.Shared._NF.Shipyard.Components;
 using Content.Shared.Access.Systems;
@@ -109,12 +111,19 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         }
 
         var validSessions = _playerManager.Sessions
-            .Where(session => session.AttachedEntity is { Valid: true } && session != playerToStealFrom)
+            .Where(session => 
+            {
+                if (session.AttachedEntity is not { Valid: true } entity || session == playerToStealFrom)
+                    return false;
+
+                // Only give bounties to players with the bounty antagonist implant
+                return HasComp<BountyAntagonistImplantComponent>(entity);
+            })
             .ToList();
 
         if (validSessions.Count == 0)
         {
-            //Log.Debug("No valid players found to give \"steal cargo\" objective");
+            //Log.Debug("No valid players found with bounty antagonist implant");
             return;
         }
 
@@ -512,9 +521,17 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
     /// <summary>
     /// Allows players with active steal cargo objectives to set beacon coordinates.
+    /// Also allows players with the bounty antagonist implant to use beacons.
     /// </summary>
     private void OnCanSetBeaconCoordinate(CanSetBeaconCoordinateEvent ev)
     {
+        // First, check if the user has the bounty antagonist implant
+        if (HasComp<BountyAntagonistImplantComponent>(ev.User))
+        {
+            ev.CanSet = true;
+            return;
+        }
+
         // Check if the user has an active steal cargo objective
         var query = AllEntityQuery<StealCargoObjectiveComponent>();
         while (query.MoveNext(out var objectiveUid, out var objective))
