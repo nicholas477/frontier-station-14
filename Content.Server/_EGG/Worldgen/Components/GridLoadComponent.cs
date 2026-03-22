@@ -1,12 +1,13 @@
-using Content.Server._EGG.Systems;
+using Content.Server._EGG.Worldgen.Systems;
 using Robust.Shared.Utility;
 
 namespace Content.Server._EGG.Components;
 
 /// <summary>
-/// Simple component that loads a grid from a .yml file
+///     Tells the ChunkGridSpawnerComponent to load a grid from a .yml file
+///     instead of generating one for worldgen
 /// </summary>
-[RegisterComponent, Access(typeof(GridLoadSystem))]
+[RegisterComponent, Access(typeof(ChunkGridSpawnerSystem))]
 public sealed partial class GridLoadComponent : Component
 {
     /// <summary>

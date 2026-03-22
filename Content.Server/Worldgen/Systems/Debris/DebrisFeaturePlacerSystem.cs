@@ -232,14 +232,26 @@ public sealed class DebrisFeaturePlacerSystem : BaseWorldSystem
                 }
             }
 
-            var ent = Spawn(debrisFeatureEv.DebrisProto, coords);
+            // Let other systems override the default spawn behavior
+            var spawnEv = new TrySpawnPlaceableDebrisFeatureEvent(coords, args.Chunk, debrisFeatureEv.DebrisProto);
+            RaiseLocalEvent(uid, ref spawnEv);
+
+            var ent = spawnEv.SpawnedEnt;
+            if (ent == null)
+            {
+                RaiseLocalEvent(args.Chunk, ref spawnEv);
+                ent = spawnEv.SpawnedEnt;
+            }
+
+            // Finally, default implementation if nothing handled the spawn event.
+            ent ??= Spawn(debrisFeatureEv.DebrisProto, coords);
             component.OwnedDebris.Add(point, ent);
 
-            var owned = EnsureComp<OwnedDebrisComponent>(ent);
+            var owned = EnsureComp<OwnedDebrisComponent>(ent.Value);
             owned.OwningController = uid;
             owned.LastKey = point;
 
-            EnsureComp<SpaceDebrisComponent>(ent); // Frontier
+            EnsureComp<SpaceDebrisComponent>(ent.Value); // Frontier
         }
 
         if (failures > 0)
@@ -295,4 +307,12 @@ public record struct PrePlaceDebrisFeatureEvent(EntityCoordinates Coords, Entity
 [PublicAPI]
 public record struct TryGetPlaceableDebrisFeatureEvent(EntityCoordinates Coords, EntityUid Chunk,
     string? DebrisProto = null);
+
+/// <summary>
+///     Called to override the default spawn behavior for debris.
+/// </summary>
+[ByRefEvent]
+[PublicAPI]
+public record struct TrySpawnPlaceableDebrisFeatureEvent(EntityCoordinates Coords, EntityUid Chunk,
+    string? DebrisProto = null, EntityUid? SpawnedEnt = null);
 

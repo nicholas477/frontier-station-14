@@ -25,6 +25,16 @@ entities:
   - uid: 1
     mapInit: true
     components:
+    - type: OwnedDebris
+    - type: LocalityLoader
+    - type: GCAbleObject
+      queue: SpaceDebris
+    - type: LinkedLifecycleGridParent
+    - type: ProtectedGrid
+      preventArtifactTriggers: true
+    - type: IFF
+      flags: HideLabel
+      color: "#FF0000"
     - type: MetaData
       name: grid
     - type: Transform

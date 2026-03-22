@@ -211,6 +211,10 @@
     - id: NFAsteroidScrapDebrisExtraGigantic
       prob: 0.15
       orGroup: debris
+  - type: ChunkGridSpawner # To let wrecks spawn in this biome
+                           # If you copy EGGWreckDebrisSyndicateShip into another table, make sure you have this component too!
+    entries:
+    - EGGWreckDebrisSyndicateShip
   - type: NoiseDrivenDebrisSelector
     debrisTable:
     - id: NFWreckDebrisMedium
