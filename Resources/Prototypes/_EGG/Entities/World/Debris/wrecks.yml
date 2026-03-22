@@ -1,0 +1,18 @@
+- type: entity
+  parent: NFBaseDebris
+  id: EGGBaseWreck
+  name: wreck debris large extra large
+  # categories: [ HideSpawnMenu ]
+  abstract: true
+  components:
+  - type: IFF
+    color: "#FF0000"
+
+- type: entity
+  id: EGGWreckDebrisSyndicateShip
+  parent: [EGGBaseWreck]
+  HideSpawnMenu: false
+  # categories: [ HideSpawnMenu ]
+  components:
+  - type: GridLoad
+    gridPath: /Maps/_EGG/Shuttles/Syndicate/recruitment-shuttle-destroyed.yml

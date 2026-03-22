@@ -237,6 +237,9 @@
     - id: NFWreckDebrisBrassMedium
       prob: 0.006
       orGroup: wreck
+    - id: EGGWreckDebrisSyndicateShip
+      prob: 1
+      orGroup: wreck
 
 # region Outer Ring
 - type: spaceBiome
