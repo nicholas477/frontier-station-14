@@ -1,10 +1,22 @@
-# Thief
+# Bounty Antagonist Role
+- type: antag
+  id: BountyAntagonist
+  name: roles-antag-bounty-antagonist-name
+  antagonist: true
+  objective: roles-antag-bounty-objective
+
 - type: entity
   parent: BaseMindRoleAntag
-  id: MindRoleBountyThief
-  name: Thief Role
+  id: MindRoleBountyAntag
+  name: Bounty Antag Role
   components:
   - type: MindRole
-    antagPrototype: Thief
-    subtype: role-subtype-thief
-  - type: ThiefRole
+    antag: true
+    antagPrototype: BountyAntagonist
+    roleType: BountyAntagonist
+    subtype: role-subtype-bounty-antag
+
+- type: roleType
+  id: BountyAntagonist
+  name: roles-antag-bounty-antagonist-name
+  color: '#d82000'

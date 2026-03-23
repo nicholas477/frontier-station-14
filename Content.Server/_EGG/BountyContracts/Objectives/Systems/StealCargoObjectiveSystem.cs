@@ -1,43 +1,26 @@
 using Content.Server._EGG.BountyContracts.Objectives.Components;
-using Content.Server._EGG.BountyContracts.Systems;
-using Content.Server._NF.BountyContracts;
-using Content.Server.Access.Systems;
 using Content.Server.Antag;
-using Content.Server.Cargo.Components;
 using Content.Server.Cargo.Systems;
 using Content.Server.GameTicking.Rules;
-using Content.Server.GameTicking.Rules.Components;
 using Content.Server.Objectives.Components;
-using Content.Server.PDA.Ringer;
-using Content.Server.Thief.Components;
 using Content.Server.Thief.Systems;
 using Content.Server.Traitor.Uplink;
-using Content.Shared._EGG.BountyContracts;
 using Content.Shared._EGG.BountyContracts.Antag;
 using Content.Shared._EGG.BountyContracts.Components;
 using Content.Shared._NF.BountyContracts;
 using Content.Shared._NF.Shipyard.Components;
 using Content.Shared.Access.Systems;
-using Content.Shared.Cargo.Components;
-using Content.Shared.CartridgeLoader;
-using Content.Shared.FixedPoint;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
 using Content.Shared.Mind;
-using Content.Shared.Movement.Components;
 using Content.Shared.Objectives.Components;
 using Content.Shared.Objectives.Systems;
-using Content.Shared.PDA;
 using Content.Shared.Roles;
 using Robust.Server.Player;
-using Robust.Shared.Map.Components;
 using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
-using Robust.Shared.Toolshed.TypeParsers;
-using System.ComponentModel;
 using System.Linq;
-using static Robust.Shared.Physics.DynamicTree;
 
 namespace Content.Server._EGG.BountyContracts.Objectives.Systems;
 
@@ -64,12 +47,10 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
     [Dependency] private readonly IPlayerManager _playerManager = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
-    [Dependency] private readonly SharedRoleSystem _roles = default!;
     [Dependency] private readonly SharedObjectivesSystem _objectives = default!;
     [Dependency] private readonly SharedMindSystem _mind = default!;
     [Dependency] private readonly MetaDataSystem _metaData = default!;
     [Dependency] private readonly UplinkSystem _uplink = default!;
-    [Dependency] private readonly TraitorRuleSystem _traitorRule = default!;
     [Dependency] private readonly ThiefBeaconSystem _thiefBeacon = default!;
     [Dependency] private readonly SharedHandsSystem _hands = default!;
 
@@ -200,7 +181,6 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         RaiseLocalEvent(uid, ref afterEv);
 
         _mind.AddObjective(ev.Mind.Owner, ev.Mind.Comp, uid);
-        //_roles.MindAddRole(ev.Mind.Owner, "MindRoleBountyThief");
 
         if (ev.Mind.Comp.OwnedEntity is not { Valid : true } traitor)
         {
@@ -243,8 +223,6 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
         _hands.TryPickupAnyHand(traitor, thiefBeacon);
         _hands.TryPickupAnyHand(traitor, satchelThief);
-
-        Log.Debug("Butthole sniffers!");
     }
 
     /// <summary>

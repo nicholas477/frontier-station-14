@@ -1,8 +1,11 @@
 using Content.Server._EGG.BountyContracts.Objectives.Components;
 using Content.Server.Implants;
 using Content.Shared._EGG.BountyContracts.Components;
+using Content.Shared.Implants;
 using Content.Shared.Implants.Components;
 using Content.Shared.Mind;
+using Content.Shared.Roles;
+using NetCord;
 
 namespace Content.Server._EGG.BountyContracts.Systems;
 
@@ -12,27 +15,27 @@ namespace Content.Server._EGG.BountyContracts.Systems;
 /// </summary>
 public sealed class BountyAntagonistImplantSystem : EntitySystem
 {
+    [Dependency] private readonly SharedRoleSystem _roles = default!;
     [Dependency] private readonly SharedMindSystem _mind = default!;
 
     public override void Initialize()
     {
         base.Initialize();
 
-        SubscribeLocalEvent<BountyAntagonistImplantComponent, ComponentInit>(OnImplantInit);
-        SubscribeLocalEvent<BountyAntagonistImplantComponent, ComponentRemove>(OnImplantRemove);
+        SubscribeLocalEvent<BountyAntagonistImplantComponent, ImplantImplantedEvent>(OnImplantEvent);
     }
 
-    private void OnImplantInit(EntityUid uid, BountyAntagonistImplantComponent component, ComponentInit args)
+    private void OnImplantEvent(Entity<BountyAntagonistImplantComponent> ent, ref ImplantImplantedEvent args)
     {
-        // This implant is permanent and cannot be removed by normal means
-        if (TryComp<SubdermalImplantComponent>(uid, out var subdermal))
+        if (args.Implanted is null)
         {
-            subdermal.Permanent = true;
+            return;
         }
-    }
 
-    private void OnImplantRemove(EntityUid uid, BountyAntagonistImplantComponent component, ComponentRemove args)
-    {
-        // Additional cleanup if needed
+        // Get the mind from the implanted entity and add the bounty thief role
+        if (_mind.TryGetMind(args.Implanted.Value, out var mindId, out _))
+        {
+            _roles.MindAddRole(mindId, "MindRoleBountyAntag");
+        }
     }
 }

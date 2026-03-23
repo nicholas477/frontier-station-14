@@ -18,8 +18,8 @@
 
 - type: entity
   id: BountyAntagonistImplanter
-  name: bounty antagonist implanter
-  description: A sterile implanter preloaded with a bounty antagonist implant. Used to mark willing participants in the criminal underworld. Single-use.
+  name: antagonist implanter
+  description: A sterile implanter preloaded with an antagonist implant. Used to mark participants in the criminal underworld. Single-use.
   parent: BaseImplantOnlyImplanterSyndi
   components:
     - type: Implanter
