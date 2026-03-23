@@ -4,6 +4,7 @@ using Content.Server.Worldgen.Systems.Debris;
 using Robust.Server.GameObjects;
 using Robust.Shared.EntitySerialization.Systems;
 using Robust.Shared.Map;
+using Robust.Shared.Random;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +15,7 @@ namespace Content.Server._EGG.Worldgen.Systems;
 
 public sealed class ChunkGridSpawnerSystem : EntitySystem
 {
+    [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly MapLoaderSystem _loader = default!;
     [Dependency] private readonly SharedTransformSystem _transformSystem = default!;
 
@@ -45,7 +47,7 @@ public sealed class ChunkGridSpawnerSystem : EntitySystem
             return;
         }
 
-        if (_loader.TryLoadGrid(_transformSystem.ToMapCoordinates(args.Coords).MapId, gridLoadComponent.GridPath, out var loadedGrid, null, args.Coords.Position))
+        if (_loader.TryLoadGrid(_transformSystem.ToMapCoordinates(args.Coords).MapId, gridLoadComponent.GridPath, out var loadedGrid, null, args.Coords.Position, _random.NextAngle()))
         {
             if (loadedGrid is null)
             {
