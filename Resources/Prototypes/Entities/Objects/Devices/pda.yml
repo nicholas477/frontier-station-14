@@ -146,6 +146,7 @@
     mindRoles: [] # Frontier: no default value here
   - type: ShipyardSellCondition # Frontier: Teleport to shipyard console on sale
     preserveOnSale: true
+  - type: AntagBountyPDA # EGG: Handles PDA access tags for when the player is a bounty antag
 
 - type: entity
   parent: BasePDA

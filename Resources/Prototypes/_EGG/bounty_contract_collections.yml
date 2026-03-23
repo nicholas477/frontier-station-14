@@ -3,3 +3,5 @@
   order: 0
   notificationType: PDA
   name: bounty-contract-collection-name-antag
+  readAccess:
+  - BountyAntag

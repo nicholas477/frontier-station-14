@@ -15,6 +15,7 @@
     antagPrototype: BountyAntagonist
     roleType: BountyAntagonist
     subtype: role-subtype-bounty-antag
+  - type: BountyAntagonistRole
 
 - type: roleType
   id: BountyAntagonist

@@ -1,9 +1,12 @@
+using Content.Server._EGG.BountyContracts.Components;
 using Content.Server._NF.BountyContracts;
 using Content.Server.CartridgeLoader;
 using Content.Shared._EGG.BountyContracts;
 using Content.Shared._EGG.BountyContracts.Antag;
+using Content.Shared._EGG.BountyContracts.Components;
 using Content.Shared._NF.Bank;
 using Content.Shared._NF.BountyContracts;
+using Content.Shared.Access.Components;
 using Content.Shared.CartridgeLoader;
 using Content.Shared.Mind;
 using Content.Shared.Roles;
@@ -12,7 +15,6 @@ using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace Content.Server._EGG.BountyContracts;
 
@@ -22,8 +24,7 @@ namespace Content.Server._EGG.BountyContracts;
 public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSystem
 {
     [Dependency] private readonly SharedMindSystem _mind = default!;
-    [Dependency] private readonly SharedRoleSystem _roleSystem = default!;
-    [Dependency] private readonly IPrototypeManager _protoMan = default!;
+    [Dependency] private readonly SharedRoleSystem _roles = default!;
     [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly CartridgeLoaderSystem _cartridgeLoader = default!;
     [Dependency] private readonly BountyContractSystem _bounty = default!;
@@ -36,8 +37,32 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
         SubscribeLocalEvent<AntagBountyContractsCartridgeComponent, GetBountyContractsEvent>(OnGetBountyContracts);
         SubscribeLocalEvent<AntagBountyContractsCartridgeComponent, CartridgeMessageEvent>(OnUiMessage);
+        SubscribeLocalEvent<AntagBountyPDAComponent, GetAccessTagsEvent>(OnGetAccessTags);
 
         InitializeCVars();
+    }
+
+    private void OnGetAccessTags(Entity<AntagBountyPDAComponent> ent, ref GetAccessTagsEvent args)
+    {
+        var playerEnt = Transform(ent.Owner).ParentUid;
+        if (playerEnt is not { Valid: true })
+        {
+            return;
+        }
+
+        // Check if player has the bounty antagonist implant
+        if (TryComp<BountyAntagonistImplantComponent>(playerEnt, out _))
+        {
+            args.Tags.Add("BountyAntag");
+        }
+
+        if (_mind.TryGetMind(playerEnt, out var mindId, out var mindComp))
+        {
+            if (_roles.MindHasRole<BountyAntagonistRoleComponent>(mindId, out _))
+            {
+                args.Tags.Add("BountyAntag");
+            }
+        }
     }
 
     public override void Update(float frameTime)

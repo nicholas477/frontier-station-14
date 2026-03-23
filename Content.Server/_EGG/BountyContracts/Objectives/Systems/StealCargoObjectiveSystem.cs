@@ -1,10 +1,8 @@
+using Content.Server._EGG.BountyContracts.Components;
 using Content.Server._EGG.BountyContracts.Objectives.Components;
-using Content.Server.Antag;
 using Content.Server.Cargo.Systems;
-using Content.Server.GameTicking.Rules;
 using Content.Server.Objectives.Components;
 using Content.Server.Thief.Systems;
-using Content.Server.Traitor.Uplink;
 using Content.Shared._EGG.BountyContracts.Antag;
 using Content.Shared._EGG.BountyContracts.Components;
 using Content.Shared._NF.BountyContracts;
@@ -14,7 +12,7 @@ using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
 using Content.Shared.Mind;
 using Content.Shared.Objectives.Components;
-using Content.Shared.Objectives.Systems;
+using Content.Shared.Players;
 using Content.Shared.Roles;
 using Robust.Server.Player;
 using Robust.Shared.Player;
@@ -39,18 +37,15 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 {
     [Dependency] private readonly EGGBountyContractSystem _eggBountyContractSystem = default!;
     [Dependency] private readonly EntityLookupSystem _lookup = default!;
-    [Dependency] private readonly AntagSelectionSystem _antag = default!;
     [Dependency] private readonly SharedIdCardSystem _idCardSystem = default!;
     [Dependency] private readonly PricingSystem _pricing = default!;
-    [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly SharedInteractionSystem _interaction = default!;
     [Dependency] private readonly IPlayerManager _playerManager = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
-    [Dependency] private readonly SharedObjectivesSystem _objectives = default!;
     [Dependency] private readonly SharedMindSystem _mind = default!;
+    [Dependency] private readonly SharedRoleSystem _roles = default!;
     [Dependency] private readonly MetaDataSystem _metaData = default!;
-    [Dependency] private readonly UplinkSystem _uplink = default!;
     [Dependency] private readonly ThiefBeaconSystem _thiefBeacon = default!;
     [Dependency] private readonly SharedHandsSystem _hands = default!;
 
@@ -97,8 +92,13 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
                 if (session.AttachedEntity is not { Valid: true } entity || session == playerToStealFrom)
                     return false;
 
-                // Only give bounties to players with the bounty antagonist implant
-                return HasComp<BountyAntagonistImplantComponent>(entity);
+                var mindId = session.GetMind();
+                if (mindId is null)
+                {
+                    return false;
+                }
+
+                return _roles.MindHasRole<BountyAntagonistRoleComponent>(mindId.Value);
             })
             .ToList();
 
