@@ -1,3 +1,7 @@
+- type: accessLevel
+  id: BountyAntag
+  name: id-card-access-level-bounty-antagonist
+
 - type: bountyContractCollection
   id: Antag
   order: 0

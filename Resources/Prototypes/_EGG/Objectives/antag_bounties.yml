@@ -29,6 +29,8 @@
   id: AntagBountyStealCargo
   name: Steal cargo
   description: Steal cargo from another player
+               Accepting this bounty spawns a thieving beacon and satchel.
+               Don't accept this in public!
   reward: 10000
   objectives:
     - EGGAntagStealCargoObjective
