@@ -136,7 +136,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
             {
                 case AntagBountyContractCommand.AcceptBounty:
                     {
-                        if (contract.State != AntagBountyContract.BountyState.Offered)
+                        if (contract.State != SharedAntagBountyContract.BountyState.Offered)
                         {
                             Log.Error($"Contract {contract.Bounty} is not in an offered state, cannot accept.");
                             return;
@@ -150,12 +150,12 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
                         RaiseLocalEvent(ref ev);
 
-                        contract.State = AntagBountyContract.BountyState.Accepted;
+                        contract.State = SharedAntagBountyContract.BountyState.Accepted;
                     }
                     break;
                 case AntagBountyContractCommand.RejectBounty:
                     {
-                        if (contract.State != AntagBountyContract.BountyState.Offered)
+                        if (contract.State != SharedAntagBountyContract.BountyState.Offered)
                         {
                             Log.Error($"Contract {contract.Bounty} is not in an offered state, cannot reject.");
                             return;
@@ -169,7 +169,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
 
                         RaiseLocalEvent(ref ev);
 
-                        contract.State = AntagBountyContract.BountyState.Rejected;
+                        contract.State = SharedAntagBountyContract.BountyState.Rejected;
                         break;
                     }
             }
@@ -245,7 +245,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
         foreach (var bounty in component.Contracts)
         {
             // Dont show the bounty if its been accepted/rejected
-            if (bounty.Value.State != AntagBountyContract.BountyState.Offered)
+            if (bounty.Value.State != SharedAntagBountyContract.BountyState.Offered)
             {
                 continue;
             }

@@ -1,12 +1,15 @@
 using Content.Shared._NF.BountyContracts;
+using Content.Shared._NF.Clothing.EntitySystems;
+using Content.Shared._NF.Pirate;
 using Robust.Shared.GameStates;
 using Robust.Shared.Prototypes;
+using Robust.Shared.Serialization;
 using System.Linq;
 
 namespace Content.Shared._EGG.BountyContracts.Antag;
 
-[Virtual]
-public partial class AntagBountyContract
+[Virtual, Serializable, NetSerializable]
+public abstract partial class SharedAntagBountyContract
 {
     public enum BountyState
     {
@@ -15,7 +18,7 @@ public partial class AntagBountyContract
         Rejected
     }
 
-    public AntagBountyContract(BountyContract bounty)
+    public SharedAntagBountyContract(BountyContract bounty)
     {
         Bounty = bounty;
     }
@@ -39,10 +42,11 @@ public partial class AntagBountyContract
     }
 }
 
-[RegisterComponent]
+[RegisterComponent, NetworkedComponent, AutoGenerateComponentState]
 public sealed partial class AntagBountyContractsCartridgeComponent : Component
 {
-    public Dictionary<uint, AntagBountyContract> Contracts = new Dictionary<uint, AntagBountyContract>();
+    [AutoNetworkedField, DataField]
+    public Dictionary<uint, SharedAntagBountyContract> Contracts = new Dictionary<uint, SharedAntagBountyContract>();
 
     public uint GetNextContractId()
     {
@@ -56,7 +60,7 @@ public sealed partial class AntagBountyContractsCartridgeComponent : Component
         }
     }
 
-    public AntagBountyContract? GetContract(uint id)
+    public SharedAntagBountyContract? GetContract(uint id)
     {
         if (Contracts.TryGetValue(id, out var contract))
         {
@@ -68,3 +72,4 @@ public sealed partial class AntagBountyContractsCartridgeComponent : Component
         }
     }
 }
+

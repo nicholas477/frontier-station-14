@@ -1,3 +1,4 @@
+using Content.Server._EGG.BountyContracts.Antag;
 using Content.Server._EGG.BountyContracts.Components;
 using Content.Server._EGG.BountyContracts.Objectives.Components;
 using Content.Server.Cargo.Systems;
@@ -5,6 +6,7 @@ using Content.Server.Objectives.Components;
 using Content.Server.Thief.Systems;
 using Content.Shared._EGG.BountyContracts.Antag;
 using Content.Shared._EGG.BountyContracts.Components;
+using Content.Shared._EGG.BountyContracts.Objectives;
 using Content.Shared._NF.BountyContracts;
 using Content.Shared._NF.Shipyard.Components;
 using Content.Shared.Access.Systems;
@@ -21,17 +23,6 @@ using Robust.Shared.Random;
 using System.Linq;
 
 namespace Content.Server._EGG.BountyContracts.Objectives.Systems;
-
-public sealed partial class AntagBountyContractStealCargo : AntagBountyContract
-{
-    public AntagBountyContractStealCargo(ICommonSession? inPlayerToStealFrom, BountyContract bounty)
-        : base(bounty)
-    {
-        PlayerToStealFrom = inPlayerToStealFrom;
-    }
-
-    public readonly ICommonSession? PlayerToStealFrom;
-}
 
 public sealed partial class StealCargoObjectiveSystem : EntitySystem
 {
@@ -116,7 +107,7 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
         }
 
         // Don't offer more than one contract
-        if (comp.Contracts.Any(item => item.Value is AntagBountyContractStealCargo bounty && bounty.State == AntagBountyContract.BountyState.Offered))
+        if (comp.Contracts.Any(item => item.Value is SharedStealCargoBounty bounty && bounty.State == AntagBountyContract.BountyState.Offered))
         {
             //Log.Debug("Not offering a new bounty");
             return;
@@ -127,16 +118,17 @@ public sealed partial class StealCargoObjectiveSystem : EntitySystem
 
         var nextContractId = comp.GetNextContractId();
         var bounty = AntagBountyContract.MakeBountyFromPrototype(nextContractId, GetNetEntity(cartridgeUid.Value), prototype);
-        var newBounty = new AntagBountyContractStealCargo(playerToStealFrom, bounty);
+        var newBounty = new SharedStealCargoBounty(playerToStealFrom, bounty);
 
         comp.Contracts.Add(nextContractId, newBounty);
+        Dirty(cartridgeUid.Value, comp);
         _eggBountyContractSystem.SendBountyNotification(cartridgeUid.Value, null, "New antag bounty!");
     }
 
 
     private void OnBountyAccepted(ref OnAntagBountyAcceptedEvent ev)
     {
-        if (ev.Contract is not AntagBountyContractStealCargo contract)
+        if (ev.Contract is not SharedStealCargoBounty contract)
         {
             return;
         }

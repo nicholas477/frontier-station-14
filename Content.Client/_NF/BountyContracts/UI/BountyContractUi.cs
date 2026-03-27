@@ -81,7 +81,7 @@ public sealed partial class BountyContractUi : UIFragment
                 list.OnRemoveButtonPressed += OnRemovePressed;
                 list.OnToggleNotificationPressed += OnToggleNotificationPressed;
                 list.OnCommandSent += OnCommandSent;
-                list.SetContracts(state.Contracts, state.IsAllowedRemoveBounties, state.AuthorUid);
+                list.SetContracts(state);
                 list.SetCanCreate(state.IsAllowedCreateBounties);
                 list.SetNotificationsEnabled(state.NotificationsEnabled);
                 tabs.Children.Add(list);

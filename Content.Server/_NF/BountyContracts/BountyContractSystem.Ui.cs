@@ -67,7 +67,16 @@ public sealed partial class BountyContractSystem
         if (cartridge.Comp.Collection != newCollection)
             cartridge.Comp.Collection = newCollection;
 
-        return new BountyContractListUiState(newCollection.Value, GetReadableCollections(loaderUid), contracts, isAllowedCreate, isAllowedRemove, GetNetEntity(loaderUid), cartridge.Comp.NotificationsEnabled);
+        return new BountyContractListUiState(
+            GetNetEntity(cartridge.Owner),
+            newCollection.Value,
+            GetReadableCollections(loaderUid),
+            contracts,
+            isAllowedCreate,
+            isAllowedRemove,
+            GetNetEntity(loaderUid),
+            cartridge.Comp.NotificationsEnabled
+        );
     }
 
     private BountyContractCreateUiState GetCreateState(Entity<BountyContractsCartridgeComponent> cartridge, ProtoId<BountyContractCollectionPrototype> collection)

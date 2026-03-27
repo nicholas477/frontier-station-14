@@ -19,7 +19,7 @@
                     <Button Name="AcceptButton" Text="{Loc 'bounty-contracts-ui-list-accept'}"
                             HorizontalAlignment="Right" VerticalAlignment="Top"/>
                     <Button Name="TurnInButton" Text="{Loc 'bounty-contracts-ui-list-turn-in'}"
-                            HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Visible="False"/>
                 </BoxContainer>
             </GridContainer>
             <BoxContainer HorizontalExpand="True">

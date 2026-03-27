@@ -111,7 +111,9 @@ public sealed class BountyContractCreateUiState : BoundUserInterfaceState
 }
 
 [NetSerializable, Serializable]
-public sealed class BountyContractListUiState(ProtoId<BountyContractCollectionPrototype> collection,
+public sealed class BountyContractListUiState(
+        NetEntity loader,
+        ProtoId<BountyContractCollectionPrototype> collection,
         List<ProtoId<BountyContractCollectionPrototype>> collections,
         List<BountyContract> contracts,
         bool isAllowedCreateBounties,
@@ -119,6 +121,7 @@ public sealed class BountyContractListUiState(ProtoId<BountyContractCollectionPr
         NetEntity authorUid,
         bool notificationsEnabled) : BoundUserInterfaceState
 {
+    public readonly NetEntity Loader = loader;
     public readonly ProtoId<BountyContractCollectionPrototype> Collection = collection;
     public readonly List<ProtoId<BountyContractCollectionPrototype>> Collections = collections;
     public readonly List<BountyContract> Contracts = contracts;

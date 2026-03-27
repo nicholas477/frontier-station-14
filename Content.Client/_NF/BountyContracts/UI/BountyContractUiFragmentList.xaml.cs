@@ -46,8 +46,12 @@ public sealed partial class BountyContractUiFragmentList : Control
         OnCommandSent?.Invoke(command);
     }
 
-    public void SetContracts(List<BountyContract> listStateContracts, bool canRemove, NetEntity authorUid)
+    public void SetContracts(BountyContractListUiState state)
     {
+        var listStateContracts = state.Contracts;
+        var canRemove = state.IsAllowedRemoveBounties;
+        var authorUid = state.AuthorUid;
+
         BountiesContainer.RemoveAllChildren();
 
         if (listStateContracts.Count == 0)
@@ -60,9 +64,14 @@ public sealed partial class BountyContractUiFragmentList : Control
         listStateContracts.Reverse();
         foreach (var contract in listStateContracts)
         {
-            var entry = _bountyContractSystem.GetControlForBountyEntry(this, contract, canRemove, authorUid);
-            if (entry is not null)
+            var entry = _bountyContractSystem.GetControlForBountyEntry(state, this, contract, canRemove, authorUid);
+            if (entry is not null && !BountiesContainer.Children.Contains(entry))
             {
+                if (entry.Parent is not null)
+                {
+                    entry.Parent.RemoveChild(entry);
+                }
+
                 BountiesContainer.AddChild(entry);
             }
         }

@@ -9,13 +9,13 @@ using System.Diagnostics.Contracts;
 namespace Content.Client._NF.BountyContracts;
 
 [ByRefEvent]
-public record struct GetBountyContractUIEvent(BountyContractUiFragmentList List, BountyContract Contract, bool CanRemove, NetEntity AuthorUid, Control? Control);
+public record struct GetBountyContractUIEvent(BountyContractListUiState State, BountyContractUiFragmentList List, BountyContract Contract, bool CanRemove, NetEntity AuthorUid, Control? Control);
 
 public sealed class BountyContractSystem : SharedBountyContractSystem
 {
-    public Control GetControlForBountyEntry(BountyContractUiFragmentList list, BountyContract contract, bool canRemove, NetEntity authorUid)
+    public Control GetControlForBountyEntry(BountyContractListUiState state, BountyContractUiFragmentList list, BountyContract contract, bool canRemove, NetEntity authorUid)
     {
-        var ev = new GetBountyContractUIEvent(list, contract, canRemove, authorUid, null);
+        var ev = new GetBountyContractUIEvent(state, list, contract, canRemove, authorUid, null);
         RaiseLocalEvent(ref ev);
 
         if (ev.Control is not null)
