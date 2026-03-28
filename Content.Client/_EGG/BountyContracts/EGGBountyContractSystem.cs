@@ -7,6 +7,7 @@ using Content.Shared._EGG.BountyContracts.Objectives;
 using Content.Shared.Objectives.Components;
 using System.Xml.Linq;
 using Robust.Client.UserInterface;
+using System.Diagnostics.Contracts;
 
 namespace Content.Client._EGG.BountyContracts;
 
@@ -19,6 +20,25 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
         base.Initialize();
 
         SubscribeLocalEvent<GetBountyContractUIEvent>(OnGetBountyContractUI);
+        SubscribeLocalEvent<AntagBountyContractsCartridgeComponent, AfterAutoHandleStateEvent>(OnBountyContractsUpdate);
+    }
+
+    private void OnBountyContractsUpdate(Entity<AntagBountyContractsCartridgeComponent> ent, ref AfterAutoHandleStateEvent args)
+    {
+        foreach (var contract in ent.Comp.Contracts)
+        {
+            if (contract.Value is not SharedStealCargoBounty stealContract)
+            {
+                continue;
+            }
+
+            if (stealContract.UI is not AntagBountyContractUI ui)
+            {
+                continue;
+            }
+
+            ui.SetTurnInButtonVisibility(stealContract.CanTurnIn);
+        }
     }
 
     private void OnGetBountyContractUI(ref GetBountyContractUIEvent ev)
@@ -52,8 +72,15 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
                 var command = new AntagBountyContractCommandMessageEvent(AntagBountyContractCommand.AcceptBounty, contract);
                 list.SendContractCommand(command);
             };
+
+            control.SetTurnInButtonVisibility(stealBounty.CanTurnIn);
+
             ev.Control = control;
             stealBounty.UI = control;
+        }
+        else
+        {
+            throw new Exception();
         }
     }
 }

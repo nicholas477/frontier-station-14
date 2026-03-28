@@ -42,7 +42,7 @@ public abstract partial class SharedAntagBountyContract
     }
 }
 
-[RegisterComponent, NetworkedComponent, AutoGenerateComponentState]
+[RegisterComponent, NetworkedComponent, AutoGenerateComponentState(true)]
 public sealed partial class AntagBountyContractsCartridgeComponent : Component
 {
     [AutoNetworkedField, DataField]

@@ -35,4 +35,9 @@ public sealed partial class AntagBountyContractUI : Control, IStealCargoBountyUI
 
         TurnInButton.OnPressed += _ => OnTurnInButtonPressed?.Invoke(contract);
     }
+
+    public void SetTurnInButtonVisibility(bool isVisible)
+    {
+        TurnInButton.Visible = isVisible;
+    }
 }
