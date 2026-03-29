@@ -178,7 +178,7 @@ public sealed partial class BountyContractSystem : SharedBountyContractSystem
         // create a new contract
         var contractId = data.LastId++;
         var contract = new BountyContract(contractId, category, name, reward, GetNetEntity(authorUid),
-            dna, vessel, description, author);
+            dna, vessel, description, author, null);
 
         // try to save it
         if (!contracts.TryAdd(contractId, contract))
@@ -254,36 +254,60 @@ public sealed partial class BountyContractSystem : SharedBountyContractSystem
 
     /// <summary>
     ///     Try to get all bounty contracts available within a particular collection.
+    ///     Raises GetBountyContractsEvent to get extra contracts.
     /// </summary>
     public IEnumerable<BountyContract> GetPermittedContracts(Entity<BountyContractsCartridgeComponent> cartridge, EntityUid loader, out ProtoId<BountyContractCollectionPrototype>? newCollection)
     {
+        var outContracts = new List<BountyContract>();
+
         newCollection = null;
         var data = GetContracts();
 
         if (data == null || data.Contracts == null)
-            return Enumerable.Empty<BountyContract>();
+        {
+            RaiseLocalEvent(cartridge, new GetBountyContractsEvent(outContracts, null));
+            return outContracts;
+        }
 
+        // If the player has a collection selected in cartridge return that
         if (cartridge.Comp.Collection != null)
         {
             if (data.Contracts.TryGetValue(cartridge.Comp.Collection.Value, out var contracts)
                 && HasReadAccess(loader, cartridge.Comp.Collection.Value, data))
             {
                 newCollection = cartridge.Comp.Collection.Value;
-                return contracts.Values;
+
+                foreach (var item in contracts.Values)
+                {
+                    outContracts.Add(item);
+                }
+
+                RaiseLocalEvent(cartridge, new GetBountyContractsEvent(outContracts, newCollection));
+                return outContracts;
             }
         }
 
+        // Otherwise just return the first collection they have read access to
         foreach (var collection in data.Contracts.Keys)
         {
             if (HasReadAccess(loader, collection, data))
             {
                 newCollection = collection;
-                return data.Contracts[collection].Values;
+
+                foreach (var item in data.Contracts[collection].Values)
+                {
+                    outContracts.Add(item);
+                }
+
+                RaiseLocalEvent(cartridge, new GetBountyContractsEvent(outContracts, newCollection));
+                return outContracts;
             }
         }
 
         // No valid permitted contracts to get
-        return Enumerable.Empty<BountyContract>();
+        RaiseLocalEvent(cartridge, new GetBountyContractsEvent(outContracts, newCollection));
+
+        return outContracts;
     }
 
     /// <summary>

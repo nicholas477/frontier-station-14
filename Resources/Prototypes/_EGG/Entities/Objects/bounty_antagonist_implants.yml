@@ -1,0 +1,26 @@
+- type: entity
+  parent: BaseSubdermalImplant
+  id: BountyAntagonistImplant
+  name: bounty antagonist implant
+  description: Upon death, the implant causes rapid biological dissolution, eliminating evidence.
+  categories: [ HideSpawnMenu ]
+  components:
+    - type: SubdermalImplant
+      permanent: true
+    - type: BountyAntagonistImplant
+    - type: TriggerOnMobstateChange
+      mobState:
+      - Dead
+      - Critical
+    - type: GibOnTrigger
+      deleteItems: true
+      deleteOrgans: true
+
+- type: entity
+  id: BountyAntagonistImplanter
+  name: antagonist implanter
+  description: A sterile implanter preloaded with an antagonist implant. Used to mark participants in the criminal underworld. Single-use.
+  parent: BaseImplantOnlyImplanterSyndi
+  components:
+    - type: Implanter
+      implant: BountyAntagonistImplant

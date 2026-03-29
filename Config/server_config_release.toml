@@ -17,6 +17,9 @@ max_connections = 256
 # Disabled by default because you may not want to do this.
 # upnp = true
 
+[infolinks]
+discord = "https://discord.gg/DsHDjnDF"
+
 [status]
 # The status server is the TCP side, used by the launcher to determine engine version, etc.
 # To be clear: Disabling it makes the launcher unable to connect!
@@ -24,12 +27,12 @@ enabled = true
 
 # This is the address and port the status server binds to.
 # The port is by default set based on net.port so it will follow what you set there.
-# bind = "*:1212"
+bind = "*:1212"
 
 # This is the address of the SS14 server as the launcher uses it.
 # This is only needed if you're proxying the status HTTP server -
 #  by default the launcher will assume the address and port match that of the status server.
-connectaddress = "https://status.burgerspace.cactus.vg/"
+connectaddress = "udp://204.152.218.248:1212"
 
 [game]
 hostname = "[EN] Burger Space (Frontier Fork)"
@@ -51,7 +54,7 @@ tags = "lang:en,region:am_n_e"
 # URL of your server. Fill this in if you have a domain name,
 # want to use HTTPS (with a reverse proxy), or other advanced scenarios.
 # Must be in the form of an ss14:// or ss14s:// URI pointing to the status API.
-server_url = ""
+server_url = "ss14s://status.burgerspace.cactus.vg/"
 # Comma-separated list of URLs of hub servers to advertise to.
 hub_urls = "https://hub.spacestation14.com/"
 
@@ -66,7 +69,7 @@ hub_urls = "https://hub.spacestation14.com/"
 # engine_version = "0.7.6"
 
 # This one is optional, the launcher will delete other ZIPs of the same fork to save space.
-# fork_id = "abacusstation"
+fork_id = "burgerspace"
 
 # Automatically set if self-hosting client zip, but otherwise use this when updating client build.
 # There is no required format, any change counts as a new version.
@@ -92,7 +95,7 @@ hub_urls = "https://hub.spacestation14.com/"
 # Authentication (accounts):
 # 0 = Optional, 1 = Required, 2 = Disabled
 # Presumably do require authentication on any public server.
-# mode = 0
+mode = 1
 
 # If true, even if authentication is required, localhost is still allowed to login directly regardless.
 # allowlocal = true

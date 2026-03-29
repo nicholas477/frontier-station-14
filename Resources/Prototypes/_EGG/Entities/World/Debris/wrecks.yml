@@ -1,0 +1,26 @@
+- type: entity
+  id: EGGBaseWreck
+  name: wreck debris large extra large
+  categories: [ HideSpawnMenu ]
+  abstract: true
+
+- type: entity
+  id: EGGWreckDebrisSyndicateShip
+  name: Wrecked syndicate ship
+  parent: [EGGBaseWreck]
+  categories: [ HideSpawnMenu ]
+  components:
+  # - type: OwnedDebris
+  # - type: LocalityLoader
+  # - type: GCAbleObject
+  #   queue: SpaceDebris
+  # # - type: MapGrid
+  # - type: LinkedLifecycleGridParent
+  # - type: ProtectedGrid
+  #   preventArtifactTriggers: true
+  # - type: PreventPilot
+  # - type: IFF
+  #   flags: HideLabel
+  #   color: "#FF0000"
+  - type: GridLoad
+    gridPath: /Maps/_EGG/Shuttles/Syndicate/recruitment-shuttle-destroyed.yml

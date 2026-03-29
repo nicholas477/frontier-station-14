@@ -69,8 +69,14 @@ public sealed class BountyContract
     public readonly string? Description;
     public readonly string? Author;
 
+    /// <summary>
+    /// The full type name of the UI entry class (e.g., "Content.Client._NF.BountyContracts.UI.BountyContractUiFragmentListEntry").
+    /// If null, just uses the default one
+    /// </summary>
+    public readonly string? EntryUIId;
+
     public BountyContract(uint contractId, BountyContractCategory category, string name,
-        int reward, NetEntity authorUid, string? dna, string? vessel, string? description, string? author)
+        int reward, NetEntity authorUid, string? dna, string? vessel, string? description, string? author, string? entryUIId)
     {
         ContractId = contractId;
         Category = category;
@@ -81,6 +87,8 @@ public sealed class BountyContract
         Vessel = vessel;
         Description = description;
         Author = author;
+        EntryUIId = entryUIId;
+
     }
 }
 
@@ -103,7 +111,9 @@ public sealed class BountyContractCreateUiState : BoundUserInterfaceState
 }
 
 [NetSerializable, Serializable]
-public sealed class BountyContractListUiState(ProtoId<BountyContractCollectionPrototype> collection,
+public sealed class BountyContractListUiState(
+        NetEntity loader,
+        ProtoId<BountyContractCollectionPrototype> collection,
         List<ProtoId<BountyContractCollectionPrototype>> collections,
         List<BountyContract> contracts,
         bool isAllowedCreateBounties,
@@ -111,6 +121,7 @@ public sealed class BountyContractListUiState(ProtoId<BountyContractCollectionPr
         NetEntity authorUid,
         bool notificationsEnabled) : BoundUserInterfaceState
 {
+    public readonly NetEntity Loader = loader;
     public readonly ProtoId<BountyContractCollectionPrototype> Collection = collection;
     public readonly List<ProtoId<BountyContractCollectionPrototype>> Collections = collections;
     public readonly List<BountyContract> Contracts = contracts;

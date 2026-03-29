@@ -1,0 +1,11 @@
+- type: accessLevel
+  id: BountyAntag
+  name: id-card-access-level-bounty-antagonist
+
+- type: bountyContractCollection
+  id: Antag
+  order: 0
+  notificationType: PDA
+  name: bounty-contract-collection-name-antag
+  readAccess:
+  - BountyAntag
