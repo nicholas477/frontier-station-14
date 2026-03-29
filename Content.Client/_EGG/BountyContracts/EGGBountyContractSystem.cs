@@ -78,9 +78,5 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
             ev.Control = control;
             stealBounty.UI = control;
         }
-        else
-        {
-            throw new Exception();
-        }
     }
 }

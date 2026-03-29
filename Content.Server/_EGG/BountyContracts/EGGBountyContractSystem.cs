@@ -254,7 +254,7 @@ public sealed partial class EGGBountyContractSystem : SharedEGGBountyContractSys
         }
     }
 
-    private void RefreshBountyUI(Entity<AntagBountyContractsCartridgeComponent> ent)
+    public void RefreshBountyUI(Entity<AntagBountyContractsCartridgeComponent> ent)
     {
         TryComp<BountyContractsCartridgeComponent>(ent, out var bountyComp);
         if (bountyComp is null)
